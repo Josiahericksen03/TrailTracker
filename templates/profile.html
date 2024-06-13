@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="profile-container">
+        <h2>Hello, {{ user.name }}</h2>
+        <img src="{{ user.profile_picture_url or url_for('static', filename='default_profile.png') }}" alt="Profile Picture" class="profile-pic">
+        <button onclick="toggleUpload()" class="btn" style="background-color: #006000; color: white;">Upload</button>
+        <button onclick="toggleUploadHistory()" class="btn" style="background-color: #006000; color: white;">Upload History</button>
+        <button onclick="toggleEditProfile()" class="btn" style="background-color: #006000; color: white;">Edit Profile</button>
+        <button onclick="toggleChangePassword()" class="btn" style="background-color: #006000; color: white;">Change Password</button>
+        <form action="/logout" method="post" style="margin-top: 10px;">
+            <button type="submit" class="btn" style="background-color: #006000; color: white;">Log Out</button>
+        </form>
+
+        <div id="upload" style="display: none;">
+            <h3>Upload Photo</h3>
+            <form action="/upload_photo" method="post" enctype="multipart/form-data">
+                <input type="file" name="photo" class="input" required>
+                <button type="submit" class="btn" style="background-color: #006000; color: white;">Upload Photo</button>
+            </form>
+        </div>
+
+        <div id="uploadHistory" style="display: none;">
+            <h3>Upload History</h3>
+            <ul>
+                {% for photo in user.upload_history %}
+                <li>{{ photo.date }} - <img src="{{ url_for('static', filename=photo.filename) }}" alt="Uploaded Photo" class="uploaded-photo"></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div id="editProfile" style="display: none;">
+            <h3>Edit Profile</h3>
+            <form action="/update_profile" method="post" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Name" class="input" value="{{ user.name }}">
+                <input type="email" name="email" placeholder="Email" class="input" value="{{ user.email }}">
+                <input type="file" name="profile_picture" class="input">
+                <button type="submit" class="btn" style="background-color: #006000; color: white;">Save Changes</button>
+            </form>
+        </div>
+
+        <div id="changePassword" style="display: none;">
+            <h3>Change Password</h3>
+            <form action="/change_password" method="post">
+                <input type="password" name="current_password" placeholder="Current Password" class="input">
+                <input type="password" name="new_password" placeholder="New Password" class="input">
+                <input type="password" name="confirm_password" placeholder="Confirm New Password" class="input">
+                <button type="submit" class="btn" style="background-color: #006000; color: white;">Change Password</button>
+            </form>
+        </div>
+
+        <div class="activity-log">
+            <h3>Activity Log</h3>
+            <ul>
+                {% for activity in user.activity_log %}
+                <li>{{ activity }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="camera-pins">
+            <h3>Saved Camera Pins</h3>
+            <ul>
+                {% for pin in user.camera_pins %}
+                <li>{{ pin.name }} (ID: {{ pin.id }})
+                    <button onclick="editPin('{{ pin.id }}')">Edit</button>
+                    <button onclick="deletePin('{{ pin.id }}')">Delete</button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function toggleUpload() {
+            var uploadDiv = document.getElementById('upload');
+            if (uploadDiv.style.display === 'none') {
+                uploadDiv.style.display = 'block';
+            } else {
+                uploadDiv.style.display = 'none';
+            }
+        }
+
+        function toggleUploadHistory() {
+            var uploadHistoryDiv = document.getElementById('uploadHistory');
+            if (uploadHistoryDiv.style.display === 'none') {
+                uploadHistoryDiv.style.display = 'block';
+            } else {
+                uploadHistoryDiv.style.display = 'none';
+            }
+        }
+
+        function toggleEditProfile() {
+            var editProfileDiv = document.getElementById('editProfile');
+            if (editProfileDiv.style.display === 'none') {
+                editProfileDiv.style.display = 'block';
+            } else {
+                editProfileDiv.style.display = 'none';
+            }
+        }
+
+        function toggleChangePassword() {
+            var changePasswordDiv = document.getElementById('changePassword');
+            if (changePasswordDiv.style.display === 'none') {
+                changePasswordDiv.style.display = 'block';
+            } else {
+                changePasswordDiv.style.display = 'none';
+            }
+        }
+
+        function editPin(pinId) {
+            // Implement the logic to edit a pin
+        }
+
+        function deletePin(pinId) {
+            // Implement the logic to delete a pin
+        }
+    </script>
+{% endblock %}

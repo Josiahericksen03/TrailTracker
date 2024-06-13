@@ -1,0 +1,6 @@
+disable firewall: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+enable firewall: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
+
+FLASK_APP=app.py flask run --host=0.0.0.0 --port=8080
+
+http://192.168.1.44:8080

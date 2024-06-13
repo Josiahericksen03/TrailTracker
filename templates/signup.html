@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Trail Tracker</h1>
+    <h2>Sign Up</h2>
+    <form action="{{ url_for('signup') }}" method="post" class="signup-form">
+        <input type="text" name="username" class="input" placeholder="Username" required>
+        <input type="password" name="password" class="input" placeholder="Password" required>
+        <input type="text" name="name" class="input" placeholder="Name" required>
+        <input type="email" name="email" class="input" placeholder="Email" required>
+        <button type="submit" class="btn">Sign Up</button>
+    </form>
+    <a href="{{ url_for('login') }}">Already have an account? Log In</a>
+{% endblock %}

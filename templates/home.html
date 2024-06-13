@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .top-bar, .bottom-bar {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #323232;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .top-bar {
+            top: 0;
+        }
+
+        .bottom-bar {
+            bottom: 0;
+            justify-content: space-around;
+        }
+
+        .title {
+            color: white;
+            font-size: 24px;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .settings-btn, .round-btn, .location-btn {
+            background-color: #323232;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 60px; /* Adjusted to bring it below the grey bar */
+            right: 20px;
+            z-index: 1001; /* Ensure it's above other elements */
+        }
+
+        .round-btn {
+            position: absolute;
+            bottom: 60px; /* Adjusted to be above the grey bar */
+            right: 20px;
+            z-index: 1001; /* Ensure it's above other elements */
+            font-size: 24px; /* Increased font size for the + */
+        }
+
+        .location-btn {
+            position: absolute;
+            bottom: 60px; /* Adjusted to be above the grey bar */
+            left: 20px;
+            z-index: 1001; /* Ensure it's above other elements */
+        }
+
+        .location-btn img {
+            width: 25px;
+            height: 25px;
+        }
+
+        .nav-btn {
+            background-color: #323232;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .nav-btn:hover {
+            background-color: #444;
+        }
+
+        .settings-btn img {
+            width: 25px;
+            height: 25px;
+        }
+
+        .popup-menu {
+            position: absolute;
+            bottom: 110px; /* Position it above the round button */
+            right: 20px;
+            background-color: #323232;
+            border: 1px solid #323232;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1001;
+        }
+
+        .popup-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            color: white;
+        }
+
+        .popup-menu button:hover {
+            background-color: #444;
+        }
+
+        /* Custom styles for Leaflet locate button */
+        .leaflet-bar .leaflet-control-locate a {
+            background-color: #323232 !important;
+            border: none !important;
+            border-radius: 50% !important;
+            width: 40px !important;
+            height: 40px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            color: white !important;
+        }
+
+        .leaflet-bar .leaflet-control-locate a:hover {
+            background-color: #444 !important;
+        }
+
+        .leaflet-bar .leaflet-control-locate a:after {
+            content: '\1F4CD'; /* Unicode character for map pin */
+            font-size: 20px;
+        }
+
+        /* Hide default zoom buttons */
+        .leaflet-control-zoom {
+            display: none;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal-content button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #218838;
+        }
+
+        .modal-content .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .modal-content .close:hover,
+        .modal-content .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .pins-modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .pins-modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+
+        .pins-modal-content ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .pins-modal-content li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .pins-modal-content .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .pins-modal-content .close:hover,
+        .pins-modal-content .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <!-- Include the Leaflet CSS and JS libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Include the Leaflet.Locate plugin CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="top-bar">
+        <div class="title">Trail Tracker</div>
+    </div>
+    <div class="bottom-bar">
+        <button class="nav-btn" onclick="showMap()">Map</button>
+        <button class="nav-btn" onclick="showAssistant()">Assistant</button>
+        <button class="nav-btn" onclick="showProfile()">Profile</button>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">
+        <img src="{{ url_for('static', filename='settings_icon.png') }}" alt="Settings">
+    </button>
+    <button class="round-btn" onclick="togglePopup()">+</button>
+    <div class="popup-menu" id="popupMenu">
+        <button onclick="addPin()">Add Pin</button>
+        <button onclick="showPins()">My Pins</button>
+    </div>
+
+    <!-- Modal for adding pin -->
+    <div id="pinModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePinModal()">&times;</span>
+            <h2>Add Pin</h2>
+            <input type="text" id="pinName" placeholder="Enter name" />
+            <input type="text" id="pinCameraId" placeholder="Enter camera ID" />
+            <button onclick="savePin()">Save Pin</button>
+        </div>
+    </div>
+
+    <!-- Modal for showing saved pins -->
+    <div id="pinsModal" class="pins-modal">
+        <div class="pins-modal-content">
+            <span class="close" onclick="closePinsModal()">&times;</span>
+            <h2>Saved Pins</h2>
+            <ul id="pinsList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let currentLat, currentLon, map, locateControl, addingPin = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the map and set its view to the user's location
+            map = L.map('map', {
+                zoomControl: false // Disable default zoom control
+            }).setView([0, 0], 2); // Initial view set to [0, 0] and zoom level 2
+
+            // Add a tile layer to the map (using Esri World Imagery tiles for a realistic view)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            }).addTo(map);
+
+            // Add the locate control to the map
+            locateControl = L.control.locate({
+                locateOptions: {
+                    enableHighAccuracy: true
+                },
+                drawCircle: true, // enable the default circle marker
+                showCompass: true, // Enable the compass direction
+                icon: 'fa fa-map-marker', // Set the icon class (optional)
+                iconLoading: 'fa fa-spinner fa-spin', // Set the loading icon class (optional)
+                onLocationError: showError, // Custom error handler
+                strings: {
+                    title: "Show my location" // Customize the title
+                }
+            }).addTo(map).start();
+
+            // Add event listener for adding pin
+            map.on('click', function(e) {
+                if (addingPin) {
+                    const { lat, lng } = e.latlng;
+                    currentLat = lat;
+                    currentLon = lng;
+                    document.getElementById('pinModal').style.display = 'block';
+                    addingPin = false;
+                }
+            });
+
+            // Load saved pins
+            loadPins();
+
+            function getLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    console.error("Geolocation is not supported by this browser.");
+                }
+            }
+
+            function showPosition(position) {
+                var lat = position.coords.latitude;
+                var lon = position.coords.longitude;
+                currentLat = lat;
+                currentLon = lon;
+
+                // Update map view and add a marker
+                map.setView([lat, lon], 13); // Zoom level 13 for a closer view
+                L.circleMarker([lat, lon], { radius: 10, color: "#007bff" }).addTo(map); // Add a blue circle marker
+
+                sendLocationToServer(lat, lon);
+            }
+
+            function showError(error) {
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        console.error("User denied the request for Geolocation.")
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        console.error("Location information is unavailable.")
+                        break;
+                    case error.TIMEOUT:
+                        console.error("The request to get user location timed out.")
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        console.error("An unknown error occurred.")
+                        break;
+                }
+            }
+
+            function sendLocationToServer(lat, lon) {
+                fetch('/save_location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lon })
+                }).then(response => {
+                    return response.json();
+                }).then(data => {
+                    console.log('Location saved:', data);
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+
+            function loadPins() {
+                fetch('/get_pins')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            data.pins.forEach(pin => {
+                                L.marker([pin.latitude, pin.longitude])
+                                    .bindPopup(`Name: ${pin.name}, Camera ID: ${pin.camera_id}`)
+                                    .addTo(map);
+                            });
+                        } else {
+                            console.error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching pins:', error);
+                    });
+            }
+
+            // Get location on load
+            getLocation();
+        });
+
+        function openSettings() {
+            window.location.href = '/settings';
+        }
+
+        function showMap() {
+            alert('Map button clicked!');
+        }
+
+        function showAssistant() {
+            alert('Assistant button clicked!');
+        }
+
+        function showProfile() {
+            window.location.href = '/profile';
+        }
+
+        function customAction() {
+            alert('Custom action button clicked!');
+        }
+
+        function togglePopup() {
+            var popup = document.getElementById('popupMenu');
+            if (popup.style.display === 'none' || popup.style.display === '') {
+                popup.style.display = 'block';
+            } else {
+                popup.style.display = 'none';
+            }
+        }
+
+        function addPin() {
+            addingPin = true;
+            togglePopup(); // Close the popup menu
+        }
+
+        function savePin() {
+            const name = document.getElementById('pinName').value;
+            const cameraId = document.getElementById('pinCameraId').value;
+
+            if (!name || !cameraId) {
+                alert('Please enter both a name and camera ID');
+                return;
+            }
+
+            const pin = { name, camera_id: cameraId, latitude: currentLat, longitude: currentLon };
+
+            fetch('/save_pin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(pin)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        L.marker([currentLat, currentLon])
+                            .bindPopup(`Name: ${name}, Camera ID: ${cameraId}`)
+                            .addTo(map);
+                        closePinModal();
+                    } else {
+                        console.error(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving pin:', error);
+                });
+        }
+
+        function showPins() {
+            fetch('/get_pins')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const pinsList = document.getElementById('pinsList');
+                        pinsList.innerHTML = '';
+                        data.pins.forEach(pin => {
+                            const li = document.createElement('li');
+                            li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
+                            pinsList.appendChild(li);
+                        });
+                        document.getElementById('pinsModal').style.display = 'block';
+                    } else {
+                        console.error(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching pins:', error);
+                });
+
+            togglePopup(); // Close the popup menu
+        }
+
+        function closePinModal() {
+            document.getElementById('pinModal').style.display = 'none';
+        }
+
+        function closePinsModal() {
+            document.getElementById('pinsModal').style.display = 'none';
+        }
+
+        function goToCurrentLocation() {
+            locateControl.start(); // Trigger the locate control to go to the current location
+        }
+    </script>
+</body>
+</html>
