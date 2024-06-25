@@ -25,11 +25,14 @@ def register_user(db, username, password, name, email):
             "email": email,
             "photos": [],
             "gps_pins": [],
+            "uploads": [],
             "scan_history": []
         })
         return True, f"User {username} registered successfully!"
     except errors.DuplicateKeyError:
         return False, "Username already exists. Try a different one."
+
+
 
 def login_user(db, username, provided_password):
     user = db.users.find_one({"username": username})

@@ -1,33 +1,159 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-{% block content %}
-    <div class="profile-container">
-        <h2>Hello, {{ user.name }}</h2>
+        .container {
+            background-color: rgba(50, 50, 50, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            color: white;
+        }
+
+        .top-bar, .bottom-bar {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #323232;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .top-bar {
+            top: 0;
+        }
+
+        .bottom-bar {
+            bottom: 0;
+            justify-content: space-around;
+        }
+
+        .title {
+            color: white;
+            font-size: 24px;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .nav-btn {
+            background-color: #323232;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .nav-btn:hover {
+            background-color: #444;
+        }
+
+        .profile-pic {
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto 10px;
+        }
+
+        .input {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 22px);
+            margin: 0 auto;
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #228B22; /* Forest green */
+            color: white;
+            cursor: pointer;
+            width: calc(100% - 22px);
+            margin: 0 auto;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #196619; /* Darker forest green */
+        }
+
+        a {
+            display: block;
+            margin-top: 10px;
+            color: #007bff;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .activity-log, .camera-pins {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            color: black;
+        }
+
+        .activity-log ul, .camera-pins ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .activity-log li, .camera-pins li {
+            padding: 5px 0;
+        }
+
+        .upload-history {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="title">Trail Tracker</div>
+    </div>
+    <div class="container">
+        <h2>Hello, {{ user.username }}</h2>
         <img src="{{ user.profile_picture_url or url_for('static', filename='default_profile.png') }}" alt="Profile Picture" class="profile-pic">
-        <button onclick="toggleUpload()" class="btn" style="background-color: #006000; color: white;">Upload</button>
-        <button onclick="toggleUploadHistory()" class="btn" style="background-color: #006000; color: white;">Upload History</button>
-        <button onclick="toggleEditProfile()" class="btn" style="background-color: #006000; color: white;">Edit Profile</button>
-        <button onclick="toggleChangePassword()" class="btn" style="background-color: #006000; color: white;">Change Password</button>
+        <button onclick="toggleEditProfile()" class="btn">Edit Profile</button>
+        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
         <form action="/logout" method="post" style="margin-top: 10px;">
-            <button type="submit" class="btn" style="background-color: #006000; color: white;">Log Out</button>
+            <button type="submit" class="btn">Log Out</button>
         </form>
-
-        <div id="upload" style="display: none;">
-            <h3>Upload Photo</h3>
-            <form action="/upload_photo" method="post" enctype="multipart/form-data">
-                <input type="file" name="photo" class="input" required>
-                <button type="submit" class="btn" style="background-color: #006000; color: white;">Upload Photo</button>
-            </form>
-        </div>
-
-        <div id="uploadHistory" style="display: none;">
-            <h3>Upload History</h3>
-            <ul>
-                {% for photo in user.upload_history %}
-                <li>{{ photo.date }} - <img src="{{ url_for('static', filename=photo.filename) }}" alt="Uploaded Photo" class="uploaded-photo"></li>
-                {% endfor %}
-            </ul>
-        </div>
 
         <div id="editProfile" style="display: none;">
             <h3>Edit Profile</h3>
@@ -35,7 +161,7 @@
                 <input type="text" name="name" placeholder="Name" class="input" value="{{ user.name }}">
                 <input type="email" name="email" placeholder="Email" class="input" value="{{ user.email }}">
                 <input type="file" name="profile_picture" class="input">
-                <button type="submit" class="btn" style="background-color: #006000; color: white;">Save Changes</button>
+                <button type="submit" class="btn">Save Changes</button>
             </form>
         </div>
 
@@ -45,7 +171,7 @@
                 <input type="password" name="current_password" placeholder="Current Password" class="input">
                 <input type="password" name="new_password" placeholder="New Password" class="input">
                 <input type="password" name="confirm_password" placeholder="Confirm New Password" class="input">
-                <button type="submit" class="btn" style="background-color: #006000; color: white;">Change Password</button>
+                <button type="submit" class="btn">Change Password</button>
             </form>
         </div>
 
@@ -69,27 +195,20 @@
                 {% endfor %}
             </ul>
         </div>
+
+        <div class="upload-history">
+            <h3>Upload History</h3>
+            <ul>
+                {% for upload in user.uploads %}
+                <li>
+                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data}}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 
     <script>
-        function toggleUpload() {
-            var uploadDiv = document.getElementById('upload');
-            if (uploadDiv.style.display === 'none') {
-                uploadDiv.style.display = 'block';
-            } else {
-                uploadDiv.style.display = 'none';
-            }
-        }
-
-        function toggleUploadHistory() {
-            var uploadHistoryDiv = document.getElementById('uploadHistory');
-            if (uploadHistoryDiv.style.display === 'none') {
-                uploadHistoryDiv.style.display = 'block';
-            } else {
-                uploadHistoryDiv.style.display = 'none';
-            }
-        }
-
         function toggleEditProfile() {
             var editProfileDiv = document.getElementById('editProfile');
             if (editProfileDiv.style.display === 'none') {
@@ -116,4 +235,5 @@
             // Implement the logic to delete a pin
         }
     </script>
-{% endblock %}
+</body>
+</html>
