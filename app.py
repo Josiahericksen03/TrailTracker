@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_wtf import FlaskForm
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -262,6 +262,17 @@ def get_pins():
         return jsonify({'status': 'error', 'message': 'No pins found'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
 
+@app.route('/delete_pin/<camera_id>', methods=['DELETE'])
+def delete_pin(camera_id):
+    username = session.get('username')
+    if username:
+        db.users.update_one(
+            {'username': username},
+            {'$pull': {'gps_pins': {'camera_id': camera_id}}}
+        )
+        return jsonify({'status': 'success', 'message': 'Pin deleted successfully'})
+    return jsonify({'status': 'error', 'message': 'User not logged in'})
+
 @app.route('/profile')
 def profile():
     if 'username' in session:
@@ -293,6 +304,67 @@ def settings():
     else:
         flash('You need to log in first')
         return redirect(url_for('login'))
+
+
+@app.route('/get_uploads_by_camera/<camera_id>', methods=['GET'])
+def get_uploads_by_camera(camera_id):
+    username = session.get('username')
+    if not username:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    user = db.users.find_one({'username': username})
+    if not user or 'uploads' not in user:
+        return jsonify({'status': 'error', 'message': 'No uploads found'})
+
+    uploads = [upload for upload in user['uploads'] if upload.get('camera_id') == camera_id]
+    return jsonify({'status': 'success', 'uploads': uploads})
+
+@app.route('/update_pin/<camera_id>', methods=['PUT'])
+def update_pin(camera_id):
+    data = request.get_json()
+    username = session.get('username')
+    if username:
+        db.users.update_one(
+            {'username': username, 'gps_pins.camera_id': camera_id},
+            {'$set': {'gps_pins.$.name': data['name'], 'gps_pins.$.camera_id': data['camera_id']}}
+        )
+        return jsonify({'status': 'success', 'message': 'Pin updated successfully'})
+    return jsonify({'status': 'error', 'message': 'User not logged in'})
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    user = db.users.find_one({'username': session['username']})
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'})
+
+    new_username = request.form.get('username')
+    if not new_username:
+        return jsonify({'status': 'error', 'message': 'Username is required'})
+
+    # Update username
+    db.users.update_one({'username': session['username']}, {'$set': {'username': new_username}})
+    session['username'] = new_username  # Update session with new username
+
+    # Update profile picture if provided
+    profile_picture = request.files.get('profile_picture')
+    if profile_picture:
+        filename = secure_filename(profile_picture.filename)
+        profile_picture_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        profile_picture.save(profile_picture_path)
+        profile_picture_url = url_for('uploaded_file', filename=filename)
+        db.users.update_one({'username': session['username']}, {'$set': {'profile_picture_url': profile_picture_url}})
+    else:
+        profile_picture_url = user.get('profile_picture_url', url_for('static', filename='default_profile.png'))
+
+    return jsonify({'status': 'success', 'username': new_username, 'profile_picture_url': profile_picture_url})
+
+# Serve the uploads folder
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)

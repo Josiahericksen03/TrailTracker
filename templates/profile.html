@@ -8,6 +8,7 @@
         body, html {
             height: 100%;
             margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
             background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
             background-size: cover;
@@ -15,6 +16,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            overflow: hidden; /* Prevent scrolling on body */
         }
 
         .container {
@@ -22,14 +24,19 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             width: 100%;
             text-align: center;
             color: white;
+            margin-top: 60px; /* Add margin to avoid overlap with the top bar */
+            margin-bottom: 60px; /* Add margin to avoid overlap with the bottom bar */
+            height: calc(100vh - 140px); /* Fixed height accounting for top and bottom bars */
+            overflow-y: auto; /* Enable vertical scrolling */
+            position: relative;
         }
 
         .top-bar, .bottom-bar {
-            position: absolute;
+            position: fixed; /* Fix the position so they are always on top and bottom */
             left: 0;
             width: 100%;
             height: 50px;
@@ -79,29 +86,39 @@
             margin: 0 auto 10px;
         }
 
-        .input {
+        .input, .btn {
             margin-bottom: 15px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: calc(100% - 22px);
+            width: 80%; /* Reduce width for a narrower form */
             margin: 0 auto;
+            display: block; /* Ensure input and button are block-level and centered */
         }
 
         .btn {
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            background-color: #228B22; /* Forest green */
+            background-color: #228B22;
             color: white;
             cursor: pointer;
-            width: calc(100% - 22px);
-            margin: 0 auto;
-            margin-top: 10px;
         }
 
         .btn:hover {
-            background-color: #196619; /* Darker forest green */
+            background-color: #196619;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 20px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            margin: 20px auto; /* Centered and spaced from the top */
+            display: inline-block; /* Ensure button is inline-block and centered */
+        }
+
+        .logout-btn:hover {
+            background-color: grey;
         }
 
         a {
@@ -114,31 +131,57 @@
             text-decoration: underline;
         }
 
-        .activity-log, .camera-pins {
+        .activity-log, .camera-pins, .upload-history {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 20px;
             text-align: left;
             color: black;
+            width: calc(100% - 40px);
+            margin: 0 auto 20px; /* Ensure sections are centered and have space between them */
         }
 
-        .activity-log ul, .camera-pins ul {
+        .activity-log ul, .camera-pins ul, .upload-history ul {
             list-style-type: none;
             padding: 0;
         }
 
-        .activity-log li, .camera-pins li {
+        .activity-log li, .camera-pins li, .upload-history li {
             padding: 5px 0;
         }
 
-        .upload-history {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
+        .show-more {
+            color: #007bff;
+            cursor: pointer;
+        }
+
+        .show-more:hover {
+            text-decoration: underline;
+        }
+
+        /* Dropdown styling */
+        .dropdown {
+            background-color: rgba(50, 50, 50, 0.8);
+            color: white;
+            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-            color: black;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: calc(100% - 40px); /* Ensure dropdown is centered */
+            display: none;
+            z-index: 1001;
+            margin: 10px auto; /* Add margin to separate from buttons */
+            text-align: center;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 5px;
+            color: white;
+            text-align: left; /* Align label text to the left */
+            width: calc(100% - 40px);
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -147,25 +190,21 @@
         <div class="title">Trail Tracker</div>
     </div>
     <div class="container">
-        <h2>Hello, {{ user.username }}</h2>
-        <img src="{{ user.profile_picture_url or url_for('static', filename='default_profile.png') }}" alt="Profile Picture" class="profile-pic">
+        <h2 id="displayedUsername">Hello, {{ user.username }}</h2>
+        <img id="profilePicture" src="{{ user.profile_picture_url }}" alt="Profile Picture" class="profile-pic">
         <button onclick="toggleEditProfile()" class="btn">Edit Profile</button>
-        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
-        <form action="/logout" method="post" style="margin-top: 10px;">
-            <button type="submit" class="btn">Log Out</button>
-        </form>
-
-        <div id="editProfile" style="display: none;">
+        <div id="editProfile" class="dropdown">
             <h3>Edit Profile</h3>
-            <form action="/update_profile" method="post" enctype="multipart/form-data">
-                <input type="text" name="name" placeholder="Name" class="input" value="{{ user.name }}">
-                <input type="email" name="email" placeholder="Email" class="input" value="{{ user.email }}">
-                <input type="file" name="profile_picture" class="input">
+            <form id="editProfileForm" action="/update_profile" method="post" enctype="multipart/form-data">
+                <label for="username" class="label">Change Username:</label>
+                <input type="text" name="username" id="username" placeholder="Username" class="input" value="{{ user.username }}">
+                <label for="profile_picture" class="label">Change Profile Pic:</label>
+                <input type="file" name="profile_picture" id="profile_picture" class="input">
                 <button type="submit" class="btn">Save Changes</button>
             </form>
         </div>
-
-        <div id="changePassword" style="display: none;">
+        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
+        <div id="changePassword" class="dropdown">
             <h3>Change Password</h3>
             <form action="/change_password" method="post">
                 <input type="password" name="current_password" placeholder="Current Password" class="input">
@@ -174,6 +213,9 @@
                 <button type="submit" class="btn">Change Password</button>
             </form>
         </div>
+        <form action="/logout" method="post" style="margin-top: 10px;">
+            <button type="submit" class="logout-btn">Log Out</button>
+        </form>
 
         <div class="activity-log">
             <h3>Activity Log</h3>
@@ -187,10 +229,10 @@
         <div class="camera-pins">
             <h3>Saved Camera Pins</h3>
             <ul>
-                {% for pin in user.camera_pins %}
-                <li>{{ pin.name }} (ID: {{ pin.id }})
-                    <button onclick="editPin('{{ pin.id }}')">Edit</button>
-                    <button onclick="deletePin('{{ pin.id }}')">Delete</button>
+                {% for pin in user.gps_pins %}
+                <li>{{ pin.name }} (ID: {{ pin.camera_id }})
+                    <button onclick="editPin('{{ pin.camera_id }}')">Edit</button>
+                    <button onclick="deletePin('{{ pin.camera_id }}')">Delete</button>
                 </li>
                 {% endfor %}
             </ul>
@@ -198,21 +240,65 @@
 
         <div class="upload-history">
             <h3>Upload History</h3>
-            <ul>
-                {% for upload in user.uploads %}
+            {% if user.uploads %}
+            <ul id="recent-uploads">
+                {% for upload in user.uploads[-5:] %}
                 <li>
-                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data}}
+                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data }}
                 </li>
                 {% endfor %}
             </ul>
+            {% if user.uploads|length > 5 %}
+            <div id="show-more" class="show-more" onclick="toggleUploadHistory()">Show More</div>
+            <ul id="full-uploads" style="display: none;">
+                {% for upload in user.uploads %}
+                <li>
+                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% else %}
+            <p>No uploads available.</p>
+            {% endif %}
         </div>
     </div>
 
+    <div class="bottom-bar">
+        <button onclick="location.href='{{ url_for('home') }}'" class="nav-btn">Home</button>
+        <button onclick="location.href='{{ url_for('upload') }}'" class="nav-btn">Assistant</button>
+        <button onclick="location.href='{{ url_for('profile') }}'" class="nav-btn">Profile</button>
+    </div>
+
     <script>
+        document.getElementById('editProfileForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting in the traditional way
+
+            var formData = new FormData(this);
+            fetch('/update_profile', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('editProfile').style.display = 'none';
+                    document.getElementById('displayedUsername').textContent = 'Hello, ' + data.username;
+                    document.getElementById('profilePicture').src = data.profile_picture_url;
+                    alert('Profile updated successfully');
+                } else {
+                    alert('Error updating profile: ' + data.message);
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
         function toggleEditProfile() {
             var editProfileDiv = document.getElementById('editProfile');
-            if (editProfileDiv.style.display === 'none') {
+            var changePasswordDiv = document.getElementById('changePassword');
+            if (editProfileDiv.style.display === 'none' || editProfileDiv.style.display === '') {
                 editProfileDiv.style.display = 'block';
+                changePasswordDiv.style.display = 'none';
             } else {
                 editProfileDiv.style.display = 'none';
             }
@@ -220,10 +306,24 @@
 
         function toggleChangePassword() {
             var changePasswordDiv = document.getElementById('changePassword');
-            if (changePasswordDiv.style.display === 'none') {
+            var editProfileDiv = document.getElementById('editProfile');
+            if (changePasswordDiv.style.display === 'none' || changePasswordDiv.style.display === '') {
                 changePasswordDiv.style.display = 'block';
+                editProfileDiv.style.display = 'none';
             } else {
                 changePasswordDiv.style.display = 'none';
+            }
+        }
+
+        function toggleUploadHistory() {
+            var fullUploads = document.getElementById('full-uploads');
+            var showMore = document.getElementById('show-more');
+            if (fullUploads.style.display === 'none') {
+                fullUploads.style.display = 'block';
+                showMore.innerText = 'Show Less';
+            } else {
+                fullUploads.style.display = 'none';
+                showMore.innerText = 'Show More';
             }
         }
 

@@ -1,6 +1,7 @@
 from pymongo import MongoClient, errors
 from password_hashing import hash_password, verify_password
 import datetime
+from flask import url_for
 
 def create_connection():
     client = MongoClient('mongodb://localhost:27017/')
@@ -26,13 +27,12 @@ def register_user(db, username, password, name, email):
             "photos": [],
             "gps_pins": [],
             "uploads": [],
-            "scan_history": []
+            "scan_history": [],
+            "profile_picture_url": url_for('static', filename='default_profile.png')  # Add default profile picture
         })
         return True, f"User {username} registered successfully!"
     except errors.DuplicateKeyError:
         return False, "Username already exists. Try a different one."
-
-
 
 def login_user(db, username, provided_password):
     user = db.users.find_one({"username": username})

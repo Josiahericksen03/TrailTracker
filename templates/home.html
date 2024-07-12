@@ -228,7 +228,8 @@
         }
 
         .pins-modal-content {
-            background-color: #fefefe;
+            background-color: #323232;
+            color: white;
             margin: 15% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -259,6 +260,52 @@
             color: black;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        .modal-content {
+            background-color: #323232;
+            color: white;
+        }
+
+        .modal-content input, .modal-content button {
+            color: black;
+        }
+
+        /* Leaflet popup customization */
+        .leaflet-popup-content-wrapper {
+            background-color: #323232 !important;
+            color: white !important;
+        }
+
+        .leaflet-popup-tip {
+            background-color: #323232 !important;
+        }
+
+        /* Button container styles */
+        .btn-container {
+            margin-top: 10px;
+        }
+
+        .btn {
+            margin-right: 10px;
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #555;
+        }
+
+        .btn-delete {
+            background-color: #d9534f;
+        }
+
+        .btn-delete:hover {
+            background-color: #c9302c;
         }
     </style>
     <!-- Include the Leaflet CSS and JS libraries -->
@@ -307,8 +354,29 @@
         </div>
     </div>
 
+    <!-- Modal for showing uploads -->
+    <div id="uploadsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadsModal()">&times;</span>
+            <h2 id="cameraNameTitle"></h2>
+            <h3 id="cameraIdTitle"></h3>
+            <ul id="uploadsList"></ul>
+        </div>
+    </div>
+
+    <!-- Modal for editing pin -->
+    <div id="editPinModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditPinModal()">&times;</span>
+            <h2>Edit Pin</h2>
+            <input type="text" id="editPinName" placeholder="Enter new name" />
+            <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" />
+            <button onclick="updatePin()">Save Changes</button>
+        </div>
+    </div>
+
     <script>
-        let currentLat, currentLon, map, locateControl, addingPin = false;
+        let currentLat, currentLon, map, locateControl, addingPin = false, editingPinId = null;
 
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the map and set its view to the user's location
@@ -410,9 +478,12 @@
                     .then(data => {
                         if (data.status === 'success') {
                             data.pins.forEach(pin => {
-                                L.marker([pin.latitude, pin.longitude])
-                                    .bindPopup(`Name: ${pin.name}, Camera ID: ${pin.camera_id}`)
+                                const marker = L.marker([pin.latitude, pin.longitude])
+                                    .bindPopup(`<div class="popup-content">Name: ${pin.name}<br>Camera ID: ${pin.camera_id}</div>`)
                                     .addTo(map);
+                                marker.on('click', function() {
+                                    showUploads(pin.camera_id, pin.name);
+                                });
                             });
                         } else {
                             console.error(data.message);
@@ -420,6 +491,32 @@
                     })
                     .catch(error => {
                         console.error('Error fetching pins:', error);
+                    });
+            }
+
+            function showUploads(camera_id, camera_name) {
+                fetch(`/get_uploads_by_camera/${camera_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const uploadsList = document.getElementById('uploadsList');
+                            const cameraNameTitle = document.getElementById('cameraNameTitle');
+                            const cameraIdTitle = document.getElementById('cameraIdTitle');
+                            uploadsList.innerHTML = '';
+                            cameraNameTitle.textContent = camera_name;
+                            cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
+                            data.uploads.forEach(upload => {
+                                const li = document.createElement('li');
+                                li.textContent = `File: ${upload.filepath} - Duration: ${upload.duration}s - Animal: ${upload.animal} - Pulled Data: ${upload.pulled_data}`;
+                                uploadsList.appendChild(li);
+                            });
+                            document.getElementById('uploadsModal').style.display = 'block';
+                        } else {
+                            console.error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching uploads:', error);
                     });
             }
 
@@ -483,7 +580,7 @@
                 .then(data => {
                     if (data.status === 'success') {
                         L.marker([currentLat, currentLon])
-                            .bindPopup(`Name: ${name}, Camera ID: ${cameraId}`)
+                            .bindPopup(`<div class="popup-content">Name: ${name}<br>Camera ID: ${cameraId}</div>`)
                             .addTo(map);
                         closePinModal();
                     } else {
@@ -505,6 +602,29 @@
                         data.pins.forEach(pin => {
                             const li = document.createElement('li');
                             li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
+                            const btnContainer = document.createElement('div');
+                            btnContainer.className = 'btn-container';
+
+                            const goToBtn = document.createElement('button');
+                            goToBtn.textContent = 'Go To';
+                            goToBtn.className = 'btn';
+                            goToBtn.onclick = () => goToPin(pin.latitude, pin.longitude);
+
+                            const editBtn = document.createElement('button');
+                            editBtn.textContent = 'Edit';
+                            editBtn.className = 'btn';
+                            editBtn.onclick = () => openEditPinModal(pin);
+
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = 'Delete';
+                            deleteBtn.className = 'btn btn-delete';
+                            deleteBtn.onclick = () => deletePin(pin.camera_id);
+
+                            btnContainer.appendChild(goToBtn);
+                            btnContainer.appendChild(editBtn);
+                            btnContainer.appendChild(deleteBtn);
+
+                            li.appendChild(btnContainer);
                             pinsList.appendChild(li);
                         });
                         document.getElementById('pinsModal').style.display = 'block';
@@ -527,8 +647,86 @@
             document.getElementById('pinsModal').style.display = 'none';
         }
 
+        function closeUploadsModal() {
+            document.getElementById('uploadsModal').style.display = 'none';
+        }
+
+        function closeEditPinModal() {
+            document.getElementById('editPinModal').style.display = 'none';
+        }
+
         function goToCurrentLocation() {
             locateControl.start(); // Trigger the locate control to go to the current location
+        }
+
+        function goToPin(latitude, longitude) {
+            map.setView([latitude, longitude], 18); // Adjust the zoom level here
+            closePinsModal();
+        }
+
+        function openEditPinModal(pin) {
+            document.getElementById('editPinName').value = pin.name;
+            document.getElementById('editPinCameraId').value = pin.camera_id;
+            editingPinId = pin.camera_id;
+            document.getElementById('editPinModal').style.display = 'block';
+        }
+
+        function editPin(camera_id) {
+            // Implement the logic to edit a pin
+            alert(`Edit pin with Camera ID: ${camera_id}`);
+        }
+
+        function deletePin(camera_id) {
+            // Implement the logic to delete a pin
+            fetch(`/delete_pin/${camera_id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showPins();
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting pin:', error);
+            });
+        }
+
+        function updatePin() {
+            const newName = document.getElementById('editPinName').value;
+            const newCameraId = document.getElementById('editPinCameraId').value;
+
+            if (!newName || !newCameraId) {
+                alert('Please enter both a new name and camera ID');
+                return;
+            }
+
+            const updatedPin = { name: newName, camera_id: newCameraId };
+
+            fetch(`/update_pin/${editingPinId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedPin)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeEditPinModal();
+                    showPins();
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating pin:', error);
+            });
         }
     </script>
 </body>
