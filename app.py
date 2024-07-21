@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_wtf import FlaskForm
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+from password_hashing import hash_password, verify_password
 from wtforms import FileField, SubmitField
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileAllowed, FileRequired
@@ -13,6 +14,7 @@ from torchvision import models, transforms
 from PIL import Image
 import cv2
 import pytesseract
+from moviepy.editor import VideoFileClip
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -39,6 +41,7 @@ model.eval()
 
 class_names = ['Bear', 'Boar', 'Bobcat', 'Deer', 'Turkey', 'Unidentifiable']
 
+
 def recognize_animal(image_path):
     transform = transforms.Compose([
         transforms.Resize(256),
@@ -52,10 +55,13 @@ def recognize_animal(image_path):
         outputs = model(image)
         _, predicted = torch.max(outputs, 1)
     return class_names[predicted.item()]
+
+
 def preprocess_image(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     return thresh
+
 
 def apply_mask(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -64,6 +70,7 @@ def apply_mask(img):
     rgba = [b, g, r, alpha]
     dst = cv2.merge(rgba, 4)
     return dst
+
 
 def extract_metadata(filepath):
     cap = cv2.VideoCapture(filepath)
@@ -77,6 +84,8 @@ def extract_metadata(filepath):
     camera_id = "Unknown"
     animal = "Unidentifiable"
     pulled_data = ""
+    date = "Unknown"
+    time = "Unknown"
 
     success, frame = cap.read()
     frame_number = 0
@@ -84,38 +93,50 @@ def extract_metadata(filepath):
     if success:
         img = frame
         height, width, _ = img.shape
-        # Define the ROI for the bottom 10th of the screen and the far right
+        # Define the ROI for the bottom 10th of the screen and the far right for camera ID
         roi_height = height // 10
-        roi_width = width // 6  # Adjusted to be smaller and more precise
-        cropped_img = img[height - roi_height:height, width - roi_width:width]
-        masked_img = apply_mask(cropped_img)
-        preprocessed_img = preprocess_image(masked_img)
-        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789CF:/.°'  # Whitelist characters
-        text = pytesseract.image_to_string(preprocessed_img, config=custom_config)
-        pulled_data = text.strip()
+        camera_id_width = width // 6  # Adjusted to be smaller and more precise
+        camera_id_img = img[height - roi_height:height, width - camera_id_width:width]
+
+        # Define the ROI for the date and time
+        date_time_height = height // 12
+        date_time_width = width // 4  # Adjusted width for date and time
+        date_img = img[height - date_time_height:height,
+                   width // 3:width // 3 + date_time_width - 10]  # Slightly less on the right
+        time_img = img[height - date_time_height:height, width // 3 + date_time_width:width - 10]  # More on the right
+
+        # Process the camera ID image
+        masked_camera_id_img = apply_mask(camera_id_img)
+        preprocessed_camera_id_img = preprocess_image(masked_camera_id_img)
+        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789CFPMA:/.°'  # Whitelist characters
+        camera_id_text = pytesseract.image_to_string(preprocessed_camera_id_img, config=custom_config).strip()
+
+        # Process the date image
+        masked_date_img = apply_mask(date_img)
+        preprocessed_date_img = preprocess_image(masked_date_img)
+        date_text = pytesseract.image_to_string(preprocessed_date_img, config=custom_config).strip()
+
+        # Process the time image
+        masked_time_img = apply_mask(time_img)
+        preprocessed_time_img = preprocess_image(masked_time_img)
+        time_text = pytesseract.image_to_string(preprocessed_time_img, config=custom_config).strip()
 
         # Print the OCR text for debugging
-        print(f"OCR Text: {text}")
+        print(f"OCR Text for Camera ID: {camera_id_text}")
+        print(f"OCR Text for Date: {date_text}")
+        print(f"OCR Text for Time: {time_text}")
 
         # Extract the camera ID
-        for line in text.split("\n"):
+        for line in camera_id_text.split("\n"):
             if len(line.strip()) == 4 and line.strip().isdigit():
                 camera_id = line.strip()
                 break
 
-        if camera_id == "Unknown" or camera_id == "":
-            # Retry with a slightly adjusted region
-            roi_width = width // 8
-            cropped_img = img[height - roi_height:height, width - roi_width:width]
-            masked_img = apply_mask(cropped_img)
-            preprocessed_img = preprocess_image(masked_img)
-            text = pytesseract.image_to_string(preprocessed_img, config=custom_config)
-            pulled_data = text.strip()
-            print(f"Retry OCR Text: {text}")
-            for line in text.split("\n"):
-                if len(line.strip()) == 4 and line.strip().isdigit():
-                    camera_id = line.strip()
-                    break
+        # Extract the date and time
+        if "/" in date_text:
+            date = date_text.split()[0]
+        if ":" in time_text:
+            time = time_text.split()[0]
 
         temp_filepath = f'temp_frame_{frame_number}.jpg'
         cv2.imwrite(temp_filepath, frame)
@@ -126,25 +147,43 @@ def extract_metadata(filepath):
         os.remove(temp_filepath)
 
     cap.release()
-    return duration, camera_id, animal, pulled_data
+    return duration, camera_id, animal, pulled_data, date, time
 
-def process_video(filepath):
+
+def convert_to_mp4(filepath, filename):
+    clip = VideoFileClip(filepath)
+    new_filename = os.path.splitext(filename)[0] + ".mp4"
+    new_filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+    clip.write_videofile(new_filepath, codec='libx264')
+    return new_filename
+
+
+def process_video(filepath, filename):
     try:
-        duration, camera_id, animal, pulled_data = extract_metadata(filepath)
+        if not filename.lower().endswith('.mp4'):
+            new_filename = convert_to_mp4(filepath, filename)
+            os.remove(filepath)  # Remove the original file
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+            filename = new_filename
+
+        duration, camera_id, animal, pulled_data, date, time = extract_metadata(filepath)
         username = session.get('username')
         if username:
             db.users.update_one(
                 {'username': username},
-                {'$push': {'uploads': {'filepath': filepath, 'duration': duration, 'camera_id': camera_id, 'animal': animal, 'pulled_data': pulled_data}}}
+                {'$push': {
+                    'uploads': {'filepath': filename, 'duration': duration, 'camera_id': camera_id, 'animal': animal,
+                                'pulled_data': pulled_data, 'date': date, 'time': time}}}
             )
-        return jsonify({'status': 'success', 'message': 'Video processed successfully'})
+        return {'status': 'success', 'message': 'Video processed successfully'}
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return {'status': 'error', 'message': str(e)}
 
 
 class UploadForm(FlaskForm):
     file = FileField('Video File', validators=[FileRequired(), FileAllowed(['mp4', 'avi', 'mov'], 'Videos only!')])
     submit = SubmitField('Upload')
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -154,16 +193,18 @@ def upload():
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        result = process_video(filepath)
-        flash(result.json['message'])
+        result = process_video(filepath, filename)
+        flash(result['message'])
         return redirect(url_for('upload'))
     return render_template('upload.html', title='Upload', form=form)
+
 
 @app.route('/')
 def index():
     if 'username' in session:
         return redirect(url_for('home'))
     return redirect(url_for('login'))
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -183,6 +224,7 @@ def signup():
             return redirect(url_for('signup'))
 
     return render_template('signup.html', title='Sign Up')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -204,6 +246,7 @@ def login():
 
     return render_template('login.html', title='Log In')
 
+
 @app.route('/home')
 def home():
     if 'username' in session:
@@ -213,11 +256,13 @@ def home():
         flash('You need to log in first')
         return redirect(url_for('login'))
 
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
     flash('You have been logged out')
     return redirect(url_for('login'))
+
 
 @app.route('/users')
 def users():
@@ -227,6 +272,7 @@ def users():
 
     all_users = db.users.find()
     return render_template('users.html', users=all_users, title='User List')
+
 
 @app.route('/save_location', methods=['POST'])
 def save_location():
@@ -240,6 +286,7 @@ def save_location():
         return jsonify({'status': 'success', 'message': 'Location saved successfully'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
 
+
 @app.route('/save_pin', methods=['POST'])
 def save_pin():
     data = request.get_json()
@@ -252,6 +299,7 @@ def save_pin():
         return jsonify({'status': 'success', 'message': 'Pin saved successfully'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
 
+
 @app.route('/get_pins', methods=['GET'])
 def get_pins():
     username = session.get('username')
@@ -261,6 +309,7 @@ def get_pins():
             return jsonify({'status': 'success', 'pins': user['gps_pins']})
         return jsonify({'status': 'error', 'message': 'No pins found'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
+
 
 @app.route('/delete_pin/<camera_id>', methods=['DELETE'])
 def delete_pin(camera_id):
@@ -273,6 +322,7 @@ def delete_pin(camera_id):
         return jsonify({'status': 'success', 'message': 'Pin deleted successfully'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
 
+
 @app.route('/profile')
 def profile():
     if 'username' in session:
@@ -282,6 +332,7 @@ def profile():
     else:
         flash('You need to log in first')
         return redirect(url_for('login'))
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -319,6 +370,7 @@ def get_uploads_by_camera(camera_id):
     uploads = [upload for upload in user['uploads'] if upload.get('camera_id') == camera_id]
     return jsonify({'status': 'success', 'uploads': uploads})
 
+
 @app.route('/update_pin/<camera_id>', methods=['PUT'])
 def update_pin(camera_id):
     data = request.get_json()
@@ -330,6 +382,8 @@ def update_pin(camera_id):
         )
         return jsonify({'status': 'success', 'message': 'Pin updated successfully'})
     return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'username' not in session:
@@ -360,10 +414,96 @@ def update_profile():
 
     return jsonify({'status': 'success', 'username': new_username, 'profile_picture_url': profile_picture_url})
 
+
 # Serve the uploads folder
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    file_ext = os.path.splitext(filename)[1].lower()
+    mimetype = 'video/quicktime' if file_ext == '.mov' else 'video/mp4'
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype=mimetype)
+
+
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    user = db.users.find_one({'username': session['username']})
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'})
+
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({'status': 'error', 'message': 'All fields are required'})
+
+    if not verify_password(user['password'], current_password):
+        return jsonify({'status': 'error', 'message': 'Current password is incorrect'})
+
+    if new_password != confirm_password:
+        return jsonify({'status': 'error', 'message': 'New passwords do not match'})
+
+    new_password_hash = hash_password(new_password)
+    db.users.update_one({'username': session['username']}, {'$set': {'password': new_password_hash}})
+
+    return jsonify({'status': 'success', 'message': 'Password changed successfully'})
+
+
+@app.route('/delete_upload', methods=['DELETE'])
+def delete_upload():
+    data = request.get_json()
+    filepath = data.get('filepath')
+    username = session.get('username')
+
+    if not filepath or not username:
+        return jsonify({'status': 'error', 'message': 'Invalid request'})
+
+    user = db.users.find_one({'username': username})
+    if not user or 'uploads' not in user:
+        return jsonify({'status': 'error', 'message': 'No uploads found'})
+
+    db.users.update_one(
+        {'username': username},
+        {'$pull': {'uploads': {'filepath': filepath}}}
+    )
+
+    full_filepath = os.path.join(app.config['UPLOAD_FOLDER'], filepath)
+    if os.path.exists(full_filepath):
+        os.remove(full_filepath)
+
+    return jsonify({'status': 'success', 'message': 'Upload deleted successfully'})
+
+@app.route('/update_upload', methods=['PUT'])
+def update_upload():
+    data = request.get_json()
+    filepath = data.get('filepath')
+    camera_id = data.get('camera_id')
+    animal = data.get('animal')
+    date = data.get('date')
+    time = data.get('time')
+    username = session.get('username')
+
+    if not filepath or not username or not camera_id or not animal or not date or not time:
+        return jsonify({'status': 'error', 'message': 'Invalid request'})
+
+    user = db.users.find_one({'username': username})
+    if not user or 'uploads' not in user:
+        return jsonify({'status': 'error', 'message': 'No uploads found'})
+
+    db.users.update_one(
+        {'username': username, 'uploads.filepath': filepath},
+        {'$set': {
+            'uploads.$.camera_id': camera_id,
+            'uploads.$.animal': animal,
+            'uploads.$.date': date,
+            'uploads.$.time': time
+        }}
+    )
+
+    return jsonify({'status': 'success', 'message': 'Upload updated successfully'})
+
 
 
 if __name__ == '__main__':

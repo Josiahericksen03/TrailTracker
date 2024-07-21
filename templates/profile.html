@@ -25,25 +25,24 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             max-width: 600px;
-            width: 100%;
+            width: 90%; /* Ensure a small margin on the sides */
             text-align: center;
             color: white;
             margin-top: 60px; /* Add margin to avoid overlap with the top bar */
             margin-bottom: 60px; /* Add margin to avoid overlap with the bottom bar */
-            height: calc(100vh - 140px); /* Fixed height accounting for top and bottom bars */
             overflow-y: auto; /* Enable vertical scrolling */
             position: relative;
         }
 
         .top-bar, .bottom-bar {
-            position: fixed; /* Fix the position so they are always on top and bottom */
+            position: fixed;
             left: 0;
             width: 100%;
             height: 50px;
             background-color: #323232;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            justify-content: center; /* Center align the items */
             z-index: 1000;
         }
 
@@ -53,14 +52,16 @@
 
         .bottom-bar {
             bottom: 0;
-            justify-content: space-around;
         }
 
         .title {
             color: white;
             font-size: 24px;
-            flex-grow: 1;
+            margin: 0;
             text-align: center;
+            display: flex;
+            justify-content: center; /* Center align the text */
+            align-items: center; /* Center vertically */
         }
 
         .nav-btn {
@@ -70,11 +71,17 @@
             cursor: pointer;
             padding: 10px;
             text-align: center;
-            flex-grow: 1;
+            margin: 0 40px; /* Add margin for spacing between buttons */
+            border-radius: 50%; /* Make hover shape round */
         }
 
         .nav-btn:hover {
             background-color: #444;
+        }
+
+        .nav-btn img {
+            width: 25px;
+            height: 25px;
         }
 
         .profile-pic {
@@ -91,7 +98,7 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: 80%; /* Reduce width for a narrower form */
+            width: 90%; /* Reduce width for a narrower form */
             margin: 0 auto;
             display: block; /* Ensure input and button are block-level and centered */
         }
@@ -100,6 +107,7 @@
             background-color: #228B22;
             color: white;
             cursor: pointer;
+            border: 2px solid white;
         }
 
         .btn:hover {
@@ -131,7 +139,7 @@
             text-decoration: underline;
         }
 
-        .activity-log, .camera-pins, .upload-history {
+        .camera-pins, .upload-history {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 8px;
@@ -140,15 +148,20 @@
             color: black;
             width: calc(100% - 40px);
             margin: 0 auto 20px; /* Ensure sections are centered and have space between them */
+            max-height: 300px; /* Fixed height for the box */
+            overflow-y: auto; /* Enable scrolling */
         }
 
-        .activity-log ul, .camera-pins ul, .upload-history ul {
+        .camera-pins ul, .upload-history ul {
             list-style-type: none;
             padding: 0;
         }
 
-        .activity-log li, .camera-pins li, .upload-history li {
-            padding: 5px 0;
+        .camera-pins li, .upload-history li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .show-more {
@@ -173,6 +186,7 @@
             z-index: 1001;
             margin: 10px auto; /* Add margin to separate from buttons */
             text-align: center;
+            border: 2px solid white;
         }
 
         .label {
@@ -182,6 +196,137 @@
             text-align: left; /* Align label text to the left */
             width: calc(100% - 40px);
             margin: 0 auto;
+        }
+
+        .spacer {
+            height: 10px; /* Add spacing between elements */
+        }
+
+        .pin-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 5px 10px;
+            text-align: center;
+            margin: 5px;
+        }
+
+        .pin-btn:hover {
+            background-color: #555;
+        }
+
+        .btn-delete {
+            background-color: #d9534f;
+        }
+
+        .btn-delete:hover {
+            background-color: #c9302c;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px; /* Add space between buttons */
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #323232;
+            color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+
+        .modal-content input, .modal-content button {
+            color: black;
+        }
+
+        .modal-content .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .modal-content .close:hover,
+        .modal-content .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .upload-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-item img {
+            width: 50px;
+            height: 50px;
+        }
+
+        .upload-details {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+
+        .upload-details span {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .upload-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Add space between buttons */
+            margin-left: 10px;
+        }
+
+        .round-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .round-btn:hover {
+            background-color: #555;
+        }
+
+        .btn-delete-round {
+            background-color: #d9534f;
+        }
+
+        .btn-delete-round:hover {
+            background-color: #c9302c;
         }
     </style>
 </head>
@@ -193,23 +338,32 @@
         <h2 id="displayedUsername">Hello, {{ user.username }}</h2>
         <img id="profilePicture" src="{{ user.profile_picture_url }}" alt="Profile Picture" class="profile-pic">
         <button onclick="toggleEditProfile()" class="btn">Edit Profile</button>
+        <div class="spacer"></div>
+        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
         <div id="editProfile" class="dropdown">
             <h3>Edit Profile</h3>
             <form id="editProfileForm" action="/update_profile" method="post" enctype="multipart/form-data">
                 <label for="username" class="label">Change Username:</label>
                 <input type="text" name="username" id="username" placeholder="Username" class="input" value="{{ user.username }}">
+                <div class="spacer"></div>
                 <label for="profile_picture" class="label">Change Profile Pic:</label>
                 <input type="file" name="profile_picture" id="profile_picture" class="input">
+                <div class="spacer"></div>
                 <button type="submit" class="btn">Save Changes</button>
             </form>
         </div>
-        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
         <div id="changePassword" class="dropdown">
             <h3>Change Password</h3>
-            <form action="/change_password" method="post">
+            <form id="changePasswordForm" action="/change_password" method="post">
+                <label for="current_password" class="label">Current Password:</label>
                 <input type="password" name="current_password" placeholder="Current Password" class="input">
+                <div class="spacer"></div>
+                <label for="new_password" class="label">New Password:</label>
                 <input type="password" name="new_password" placeholder="New Password" class="input">
+                <div class="spacer"></div>
+                <label for="confirm_password" class="label">Confirm New Password:</label>
                 <input type="password" name="confirm_password" placeholder="Confirm New Password" class="input">
+                <div class="spacer"></div>
                 <button type="submit" class="btn">Change Password</button>
             </form>
         </div>
@@ -217,22 +371,17 @@
             <button type="submit" class="logout-btn">Log Out</button>
         </form>
 
-        <div class="activity-log">
-            <h3>Activity Log</h3>
-            <ul>
-                {% for activity in user.activity_log %}
-                <li>{{ activity }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-
         <div class="camera-pins">
             <h3>Saved Camera Pins</h3>
             <ul>
                 {% for pin in user.gps_pins %}
-                <li>{{ pin.name }} (ID: {{ pin.camera_id }})
-                    <button onclick="editPin('{{ pin.camera_id }}')">Edit</button>
-                    <button onclick="deletePin('{{ pin.camera_id }}')">Delete</button>
+                <li>
+                    <span>{{ pin.name }} (ID: {{ pin.camera_id }})</span>
+                    <div class="btn-group">
+                        <button onclick="viewActivity('{{ pin.camera_id }}', '{{ pin.name }}')" class="pin-btn">View Activity</button>
+                        <button onclick="openEditPinModal('{{ pin.camera_id }}', '{{ pin.name }}')" class="pin-btn">Edit</button>
+                        <button onclick="deletePin('{{ pin.camera_id }}')" class="pin-btn btn-delete">Delete</button>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>
@@ -242,22 +391,26 @@
             <h3>Upload History</h3>
             {% if user.uploads %}
             <ul id="recent-uploads">
-                {% for upload in user.uploads[-5:] %}
-                <li>
-                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data }}
+                {% for upload in user.uploads | reverse %}
+                <li class="upload-item" id="upload-{{ loop.index }}">
+                    <div class="upload-details">
+                        <span>File: {{ upload.filepath }}</span>
+                        <span>Duration: {{ upload.duration | int }}s</span>
+                        <span>Camera ID: {{ upload.camera_id }}</span>
+                        <span>Animal: {{ upload.animal }}</span>
+                        <span>Pulled Data: {{ upload.pulled_data }}</span>
+                        <span>Date: {{ upload.date }}</span>
+                        <span>Time: {{ upload.time }}</span>
+                    </div>
+                    <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
+                    <div class="upload-actions">
+                        <button class="round-btn" onclick="viewVideo('{{ upload.filepath }}')">View Video</button>
+                        <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
+                        <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ loop.index }}')">Delete</button>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>
-            {% if user.uploads|length > 5 %}
-            <div id="show-more" class="show-more" onclick="toggleUploadHistory()">Show More</div>
-            <ul id="full-uploads" style="display: none;">
-                {% for upload in user.uploads %}
-                <li>
-                    File: {{ upload.filepath }} - Duration: {{ upload.duration }}s - Camera ID: {{ upload.camera_id }} - Animal: {{ upload.animal }} - Pulled Data: {{ upload.pulled_data }}
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
             {% else %}
             <p>No uploads available.</p>
             {% endif %}
@@ -265,10 +418,74 @@
     </div>
 
     <div class="bottom-bar">
-        <button onclick="location.href='{{ url_for('home') }}'" class="nav-btn">Home</button>
-        <button onclick="location.href='{{ url_for('upload') }}'" class="nav-btn">Assistant</button>
-        <button onclick="location.href='{{ url_for('profile') }}'" class="nav-btn">Profile</button>
+        <button class="nav-btn" onclick="location.href='/home'">
+            <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
+        </button>
+        <button class="nav-btn" onclick="location.href='/upload'">
+            <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
+        </button>
+        <button class="nav-btn" onclick="location.href='/profile'">
+            <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
+        </button>
     </div>
+
+    <!-- Modal for showing uploads -->
+    <div id="uploadsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadsModal()">&times;</span>
+            <h2 id="cameraNameTitle"></h2>
+            <h3 id="cameraIdTitle"></h3>
+            <ul id="uploadsList"></ul>
+        </div>
+    </div>
+
+    <!-- Modal for editing pin -->
+    <div id="editPinModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditPinModal()">&times;</span>
+            <h2>Edit Pin</h2>
+            <input type="text" id="editPinName" placeholder="Enter new name" class="input" />
+            <div class="spacer"></div>
+            <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" class="input" />
+            <div class="spacer"></div>
+            <button onclick="updatePin()" class="btn" style="color: white;">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Modal for viewing video -->
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeVideoModal()">&times;</span>
+            <video id="videoPlayer" width="100%" controls>
+                <source id="videoSource" src="" type="">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <!-- Modal for editing upload -->
+<div id="editUploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditUploadModal()">&times;</span>
+        <h2>Wrong info? Correct it here</h2>
+        <form id="editUploadForm">
+            <label for="editCameraId" class="label">Camera ID:</label>
+            <input type="text" id="editCameraId" class="input" />
+            <div class="spacer"></div>
+            <label for="editAnimal" class="label">Animal:</label>
+            <input type="text" id="editAnimal" class="input" />
+            <div class="spacer"></div>
+            <label for="editDate" class="label">Date:</label>
+            <input type="text" id="editDate" class="input" />
+            <div class="spacer"></div>
+            <label for="editTime" class="label">Time:</label>
+            <input type="text" id="editTime" class="input" />
+            <div class="spacer"></div>
+            <button type="button" onclick="updateUpload()" class="btn">Save Changes</button>
+        </form>
+    </div>
+</div>
+
 
     <script>
         document.getElementById('editProfileForm').addEventListener('submit', function(event) {
@@ -287,6 +504,26 @@
                     alert('Profile updated successfully');
                 } else {
                     alert('Error updating profile: ' + data.message);
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('changePasswordForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting in the traditional way
+
+            var formData = new FormData(this);
+            fetch('/change_password', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('changePassword').style.display = 'none';
+                    alert('Password changed successfully');
+                } else {
+                    alert('Error changing password: ' + data.message);
                 }
             }).catch(error => {
                 console.error('Error:', error);
@@ -327,13 +564,204 @@
             }
         }
 
-        function editPin(pinId) {
-            // Implement the logic to edit a pin
+        function viewActivity(cameraId, cameraName) {
+            fetch(`/get_uploads_by_camera/${cameraId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const uploadsList = document.getElementById('uploadsList');
+                        const cameraNameTitle = document.getElementById('cameraNameTitle');
+                        const cameraIdTitle = document.getElementById('cameraIdTitle');
+                        uploadsList.innerHTML = '';
+                        cameraNameTitle.textContent = cameraName;
+                        cameraIdTitle.textContent = `Camera ID: ${cameraId}`;
+                        data.uploads.forEach(upload => {
+                            const li = document.createElement('li');
+                            li.textContent = `File: ${upload.filepath} - Duration: ${upload.duration}s - Animal: ${upload.animal} - Pulled Data: ${upload.pulled_data}`;
+                            uploadsList.appendChild(li);
+                        });
+                        document.getElementById('uploadsModal').style.display = 'block';
+                    } else {
+                        console.error(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching uploads:', error);
+                });
         }
 
-        function deletePin(pinId) {
-            // Implement the logic to delete a pin
+        function openEditPinModal(cameraId, cameraName) {
+            document.getElementById('editPinName').value = cameraName;
+            document.getElementById('editPinCameraId').value = cameraId;
+            editingPinId = cameraId;
+            document.getElementById('editPinModal').style.display = 'block';
         }
+
+        function closeUploadsModal() {
+            document.getElementById('uploadsModal').style.display = 'none';
+        }
+
+        function closeEditPinModal() {
+            document.getElementById('editPinModal').style.display = 'none';
+        }
+
+        function closeVideoModal() {
+            document.getElementById('videoModal').style.display = 'none';
+            var video = document.getElementById('videoPlayer');
+            video.pause();
+            video.currentTime = 0;
+        }
+
+        function deletePin(cameraId) {
+            fetch(`/delete_pin/${cameraId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload(); // Refresh the page after deletion
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting pin:', error);
+            });
+        }
+
+        function deleteUpload(filepath, elementId) {
+            fetch(`/delete_upload`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filepath: filepath })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById(elementId).remove(); // Remove the upload item from the DOM
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting upload:', error);
+            });
+        }
+
+        function viewVideo(filepath) {
+            console.log('Button clicked, opening video modal for:', filepath);
+            var videoPlayer = document.getElementById('videoPlayer');
+            var videoSource = document.getElementById('videoSource');
+
+            // Clear existing source
+            videoSource.src = '';
+
+            // Determine the correct source based on file extension
+            if (filepath.toLowerCase().endsWith('.mp4') || filepath.toLowerCase().endsWith('.mov')) {
+                videoSource.src = `/uploads/${filepath}`;
+                videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
+            } else {
+                console.error('Unsupported video format');
+                return;
+            }
+
+            videoPlayer.load();
+            document.getElementById('videoModal').style.display = 'block';
+            console.log('Video source set to:', videoSource.src); // Debug log
+        }
+
+        function updatePin() {
+            const newName = document.getElementById('editPinName').value;
+            const newCameraId = document.getElementById('editPinCameraId').value;
+
+            if (!newName || !newCameraId) {
+                alert('Please enter both a new name and camera ID');
+                return;
+            }
+
+            const updatedPin = { name: newName, camera_id: newCameraId };
+
+            fetch(`/update_pin/${editingPinId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedPin)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeEditPinModal();
+                    window.location.reload(); // Refresh the page after updating
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating pin:', error);
+            });
+        }
+        // Open edit upload modal
+function openEditUploadModal(filepath, cameraId, animal, date, time) {
+    document.getElementById('editCameraId').value = cameraId;
+    document.getElementById('editAnimal').value = animal;
+    document.getElementById('editDate').value = date;
+    document.getElementById('editTime').value = time;
+    editingUploadFilepath = filepath;
+    document.getElementById('editUploadModal').style.display = 'block';
+}
+
+// Close edit upload modal
+function closeEditUploadModal() {
+    document.getElementById('editUploadModal').style.display = 'none';
+}
+
+// Update upload details
+function updateUpload() {
+    const newCameraId = document.getElementById('editCameraId').value;
+    const newAnimal = document.getElementById('editAnimal').value;
+    const newDate = document.getElementById('editDate').value;
+    const newTime = document.getElementById('editTime').value;
+
+    if (!newCameraId || !newAnimal || !newDate || !newTime) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const updatedUpload = {
+        filepath: editingUploadFilepath,
+        camera_id: newCameraId,
+        animal: newAnimal,
+        date: newDate,
+        time: newTime
+    };
+
+    fetch(`/update_upload`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedUpload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeEditUploadModal();
+            window.location.reload(); // Refresh the page after updating
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating upload:', error);
+    });
+}
+
     </script>
 </body>
 </html>

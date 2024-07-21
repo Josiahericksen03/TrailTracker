@@ -17,14 +17,14 @@
         }
 
         .top-bar, .bottom-bar {
-            position: absolute;
+            position: fixed;
             left: 0;
             width: 100%;
             height: 50px;
             background-color: #323232;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            justify-content: center;
             z-index: 1000;
         }
 
@@ -34,14 +34,34 @@
 
         .bottom-bar {
             bottom: 0;
-            justify-content: space-around;
+            justify-content: center; /* Center the buttons */
         }
 
         .title {
             color: white;
             font-size: 24px;
-            flex-grow: 1;
             text-align: center;
+            margin: 0;
+        }
+
+        .nav-btn {
+            background-color: #323232;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            text-align: center;
+            margin: 0 40px; /* Add margin for spacing between buttons */
+            border-radius: 50%; /* Make hover shape round */
+        }
+
+        .nav-btn:hover {
+            background-color: #444;
+        }
+
+        .nav-btn img {
+            width: 25px;
+            height: 25px;
         }
 
         .settings-btn, .round-btn, .location-btn {
@@ -59,43 +79,29 @@
 
         .settings-btn {
             position: absolute;
-            top: 60px; /* Adjusted to bring it below the grey bar */
+            top: 60px;
             right: 20px;
-            z-index: 1001; /* Ensure it's above other elements */
+            z-index: 1001;
         }
 
         .round-btn {
             position: absolute;
-            bottom: 60px; /* Adjusted to be above the grey bar */
+            bottom: 60px;
             right: 20px;
-            z-index: 1001; /* Ensure it's above other elements */
-            font-size: 24px; /* Increased font size for the + */
+            z-index: 1001;
+            font-size: 24px;
         }
 
         .location-btn {
             position: absolute;
-            bottom: 60px; /* Adjusted to be above the grey bar */
+            bottom: 60px;
             left: 20px;
-            z-index: 1001; /* Ensure it's above other elements */
+            z-index: 1001;
         }
 
         .location-btn img {
             width: 25px;
             height: 25px;
-        }
-
-        .nav-btn {
-            background-color: #323232;
-            color: white;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            text-align: center;
-            flex-grow: 1;
-        }
-
-        .nav-btn:hover {
-            background-color: #444;
         }
 
         .settings-btn img {
@@ -105,7 +111,7 @@
 
         .popup-menu {
             position: absolute;
-            bottom: 110px; /* Position it above the round button */
+            bottom: 110px;
             right: 20px;
             background-color: #323232;
             border: 1px solid #323232;
@@ -171,7 +177,8 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: #323232;
+            color: white;
             margin: 15% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -180,25 +187,25 @@
             border-radius: 8px;
         }
 
-        .modal-content input {
-            width: 100%;
+        .modal-content input, .modal-content button {
+            color: black;
+            display: block;
+            width: calc(100% - 40px);
+            margin: 10px auto;
             padding: 10px;
-            margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
 
         .modal-content button {
-            padding: 10px 20px;
-            background-color: #28a745;
+            background-color: #228B22;
             color: white;
-            border: none;
-            border-radius: 4px;
             cursor: pointer;
+            border: 2px solid white;
         }
 
         .modal-content button:hover {
-            background-color: #218838;
+            background-color: #196619;
         }
 
         .modal-content .close {
@@ -262,15 +269,6 @@
             cursor: pointer;
         }
 
-        .modal-content {
-            background-color: #323232;
-            color: white;
-        }
-
-        .modal-content input, .modal-content button {
-            color: black;
-        }
-
         /* Leaflet popup customization */
         .leaflet-popup-content-wrapper {
             background-color: #323232 !important;
@@ -321,9 +319,15 @@
         <div class="title">Trail Tracker</div>
     </div>
     <div class="bottom-bar">
-        <button class="nav-btn" onclick="showMap()">Map</button>
-        <button class="nav-btn" onclick="showAssistant()">Assistant</button>
-        <button class="nav-btn" onclick="showProfile()">Profile</button>
+        <button class="nav-btn" onclick="location.href='/home'">
+            <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
+        </button>
+        <button class="nav-btn" onclick="location.href='/upload'">
+            <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
+        </button>
+        <button class="nav-btn" onclick="location.href='/profile'">
+            <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
+        </button>
     </div>
     <button class="settings-btn" onclick="openSettings()">
         <img src="{{ url_for('static', filename='settings_icon.png') }}" alt="Settings">
@@ -334,19 +338,19 @@
         <button onclick="showPins()">My Pins</button>
     </div>
 
-    <!-- Modal for adding pin -->
-    <div id="pinModal" class="modal">
+    <!-- Modal for adding/editing pin -->
+    <div id="pinModal" class="modal" style="z-index: 1003;">
         <div class="modal-content">
             <span class="close" onclick="closePinModal()">&times;</span>
-            <h2>Add Pin</h2>
+            <h2 id="pinModalTitle">Add Pin</h2>
             <input type="text" id="pinName" placeholder="Enter name" />
             <input type="text" id="pinCameraId" placeholder="Enter camera ID" />
-            <button onclick="savePin()">Save Pin</button>
+            <button id="pinModalSaveBtn" onclick="savePin()">Save Pin</button>
         </div>
     </div>
 
     <!-- Modal for showing saved pins -->
-    <div id="pinsModal" class="pins-modal">
+    <div id="pinsModal" class="pins-modal" style="z-index: 1002;">
         <div class="pins-modal-content">
             <span class="close" onclick="closePinsModal()">&times;</span>
             <h2>Saved Pins</h2>
@@ -355,7 +359,7 @@
     </div>
 
     <!-- Modal for showing uploads -->
-    <div id="uploadsModal" class="modal">
+    <div id="uploadsModal" class="modal" style="z-index: 1002;">
         <div class="modal-content">
             <span class="close" onclick="closeUploadsModal()">&times;</span>
             <h2 id="cameraNameTitle"></h2>
@@ -364,14 +368,37 @@
         </div>
     </div>
 
-    <!-- Modal for editing pin -->
-    <div id="editPinModal" class="modal">
+    <!-- Modal for viewing video -->
+    <div id="videoModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeEditPinModal()">&times;</span>
-            <h2>Edit Pin</h2>
-            <input type="text" id="editPinName" placeholder="Enter new name" />
-            <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" />
-            <button onclick="updatePin()">Save Changes</button>
+            <span class="close" onclick="closeVideoModal()">&times;</span>
+            <video id="videoPlayer" width="100%" controls>
+                <source id="videoSource" src="" type="">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <!-- Modal for editing upload -->
+    <div id="editUploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditUploadModal()">&times;</span>
+            <h2>Wrong info? Correct it here</h2>
+            <form id="editUploadForm">
+                <label for="editCameraId" class="label">Camera ID:</label>
+                <input type="text" id="editCameraId" class="input" />
+                <div class="spacer"></div>
+                <label for="editAnimal" class="label">Animal:</label>
+                <input type="text" id="editAnimal" class="input" />
+                <div class="spacer"></div>
+                <label for="editDate" class="label">Date:</label>
+                <input type="text" id="editDate" class="input" />
+                <div class="spacer"></div>
+                <label for="editTime" class="label">Time:</label>
+                <input type="text" id="editTime" class="input" />
+                <div class="spacer"></div>
+                <button type="button" onclick="updateUpload()" class="btn">Save Changes</button>
+            </form>
         </div>
     </div>
 
@@ -410,6 +437,10 @@
                     const { lat, lng } = e.latlng;
                     currentLat = lat;
                     currentLon = lng;
+                    document.getElementById('pinModalTitle').textContent = 'Add Pin';
+                    document.getElementById('pinName').value = '';
+                    document.getElementById('pinCameraId').value = '';
+                    document.getElementById('pinModalSaveBtn').setAttribute('onclick', 'savePin()');
                     document.getElementById('pinModal').style.display = 'block';
                     addingPin = false;
                 }
@@ -495,30 +526,57 @@
             }
 
             function showUploads(camera_id, camera_name) {
-                fetch(`/get_uploads_by_camera/${camera_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            const uploadsList = document.getElementById('uploadsList');
-                            const cameraNameTitle = document.getElementById('cameraNameTitle');
-                            const cameraIdTitle = document.getElementById('cameraIdTitle');
-                            uploadsList.innerHTML = '';
-                            cameraNameTitle.textContent = camera_name;
-                            cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
-                            data.uploads.forEach(upload => {
-                                const li = document.createElement('li');
-                                li.textContent = `File: ${upload.filepath} - Duration: ${upload.duration}s - Animal: ${upload.animal} - Pulled Data: ${upload.pulled_data}`;
-                                uploadsList.appendChild(li);
-                            });
-                            document.getElementById('uploadsModal').style.display = 'block';
-                        } else {
-                            console.error(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching uploads:', error);
-                    });
+    fetch(`/get_uploads_by_camera/${camera_id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const uploadsList = document.getElementById('uploadsList');
+                const cameraNameTitle = document.getElementById('cameraNameTitle');
+                const cameraIdTitle = document.getElementById('cameraIdTitle');
+                uploadsList.innerHTML = '';
+                cameraNameTitle.textContent = camera_name;
+                cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
+                data.uploads.forEach(upload => {
+                    const animalIcon = upload.animal.toLowerCase() + '_white.png';
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <div>
+                                <div>File: ${upload.filepath}</div>
+                                <div>Duration: ${parseInt(upload.duration)}s</div>
+                                <div>Camera ID: ${upload.camera_id}</div>
+                                <div>Animal: ${upload.animal}</div>
+                                <div>Date: ${upload.date}</div>
+                                <div>Time: ${upload.time}</div>
+                            </div>
+                            <div style="margin-left: 70px;">
+                                <img src="/static/${animalIcon}" alt="${upload.animal}" style="width: 50px; height: 50px;">
+                            </div>
+                        </div>
+                        <div class="btn-container" style="margin-left: -20px;">
+                            <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
+                            <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                            <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
+                        </div>`;
+                    uploadsList.appendChild(li);
+                });
+                document.getElementById('uploadsModal').style.display = 'block';
+            } else {
+                console.error(data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error fetching uploads:', error);
+        });
+}
+
+// Get location on load
+getLocation();
+
+
+// Get location on load
+getLocation();
+
 
             // Get location on load
             getLocation();
@@ -651,8 +709,15 @@
             document.getElementById('uploadsModal').style.display = 'none';
         }
 
-        function closeEditPinModal() {
-            document.getElementById('editPinModal').style.display = 'none';
+        function closeEditUploadModal() {
+            document.getElementById('editUploadModal').style.display = 'none';
+        }
+
+        function closeVideoModal() {
+            document.getElementById('videoModal').style.display = 'none';
+            var video = document.getElementById('videoPlayer');
+            video.pause();
+            video.currentTime = 0;
         }
 
         function goToCurrentLocation() {
@@ -665,19 +730,16 @@
         }
 
         function openEditPinModal(pin) {
-            document.getElementById('editPinName').value = pin.name;
-            document.getElementById('editPinCameraId').value = pin.camera_id;
+            document.getElementById('pinModalTitle').textContent = 'Edit Pin';
+            document.getElementById('pinName').value = pin.name;
+            document.getElementById('pinCameraId').value = pin.camera_id;
+            document.getElementById('pinModalSaveBtn').setAttribute('onclick', 'updatePin()');
             editingPinId = pin.camera_id;
-            document.getElementById('editPinModal').style.display = 'block';
-        }
-
-        function editPin(camera_id) {
-            // Implement the logic to edit a pin
-            alert(`Edit pin with Camera ID: ${camera_id}`);
+            document.getElementById('pinModal').style.display = 'block';
+            document.getElementById('pinModal').style.zIndex = '1003'; // Ensure it appears above the "Saved Pins" modal
         }
 
         function deletePin(camera_id) {
-            // Implement the logic to delete a pin
             fetch(`/delete_pin/${camera_id}`, {
                 method: 'DELETE',
                 headers: {
@@ -698,8 +760,8 @@
         }
 
         function updatePin() {
-            const newName = document.getElementById('editPinName').value;
-            const newCameraId = document.getElementById('editPinCameraId').value;
+            const newName = document.getElementById('pinName').value;
+            const newCameraId = document.getElementById('pinCameraId').value;
 
             if (!newName || !newCameraId) {
                 alert('Please enter both a new name and camera ID');
@@ -718,7 +780,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    closeEditPinModal();
+                    closePinModal();
                     showPins();
                 } else {
                     console.error(data.message);
@@ -727,6 +789,89 @@
             .catch(error => {
                 console.error('Error updating pin:', error);
             });
+        }
+
+        // Open edit upload modal
+        function openEditUploadModal(filepath, cameraId, animal, date, time) {
+            document.getElementById('editCameraId').value = cameraId;
+            document.getElementById('editAnimal').value = animal;
+            document.getElementById('editDate').value = date;
+            document.getElementById('editTime').value = time;
+            editingUploadFilepath = filepath;
+            document.getElementById('editUploadModal').style.display = 'block';
+        }
+
+        // Update upload details
+        function updateUpload() {
+            const newCameraId = document.getElementById('editCameraId').value;
+            const newAnimal = document.getElementById('editAnimal').value;
+            const newDate = document.getElementById('editDate').value;
+            const newTime = document.getElementById('editTime').value;
+
+            if (!newCameraId || !newAnimal || !newDate || !newTime) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const updatedUpload = {
+                filepath: editingUploadFilepath,
+                camera_id: newCameraId,
+                animal: newAnimal,
+                date: newDate,
+                time: newTime
+            };
+
+            fetch(`/update_upload`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedUpload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeEditUploadModal();
+                    window.location.reload(); // Refresh the page after updating
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating upload:', error);
+            });
+        }
+
+        // Delete upload
+        function deleteUpload(filepath) {
+            fetch(`/delete_upload`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filepath: filepath })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload(); // Refresh the page after deletion
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting upload:', error);
+            });
+        }
+
+        // View video
+        function viewVideo(filepath) {
+            const videoSource = document.getElementById('videoSource');
+            videoSource.src = `/uploads/${filepath}`;
+            videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.load();
+            document.getElementById('videoModal').style.display = 'block';
         }
     </script>
 </body>
