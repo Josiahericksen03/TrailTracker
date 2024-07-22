@@ -177,17 +177,23 @@
         }
 
         .modal-content {
-            background-color: #323232;
-            color: white;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            border-radius: 8px;
-        }
+    background-color: #323232;
+    color: white;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 8px;
+    text-align: center;
+    height: 60vh; /* Adjust height to fit content */
+    overflow-y: auto; /* Make content scrollable */
+    position: relative; /* Ensure it stays centered */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Center vertically */
+}
 
-        .modal-content input, .modal-content button {
+        .modal-content input, .modal-content button, .modal-content select {
             color: black;
             display: block;
             width: calc(100% - 40px);
@@ -305,6 +311,10 @@
         .btn-delete:hover {
             background-color: #c9302c;
         }
+
+        .spacer {
+            margin: 10px 0;
+        }
     </style>
     <!-- Include the Leaflet CSS and JS libraries -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -368,42 +378,35 @@
         </div>
     </div>
 
-    <!-- Modal for viewing video -->
-    <div id="videoModal" class="modal">
+    <!-- Modal for settings -->
+    <div id="settingsModal" class="modal" style="z-index: 1002;">
         <div class="modal-content">
-            <span class="close" onclick="closeVideoModal()">&times;</span>
-            <video id="videoPlayer" width="100%" controls>
-                <source id="videoSource" src="" type="">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-    </div>
-
-    <!-- Modal for editing upload -->
-    <div id="editUploadModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditUploadModal()">&times;</span>
-            <h2>Wrong info? Correct it here</h2>
-            <form id="editUploadForm">
-                <label for="editCameraId" class="label">Camera ID:</label>
-                <input type="text" id="editCameraId" class="input" />
-                <div class="spacer"></div>
-                <label for="editAnimal" class="label">Animal:</label>
-                <input type="text" id="editAnimal" class="input" />
-                <div class="spacer"></div>
-                <label for="editDate" class="label">Date:</label>
-                <input type="text" id="editDate" class="input" />
-                <div class="spacer"></div>
-                <label for="editTime" class="label">Time:</label>
-                <input type="text" id="editTime" class="input" />
-                <div class="spacer"></div>
-                <button type="button" onclick="updateUpload()" class="btn">Save Changes</button>
-            </form>
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+            <h2>Settings</h2>
+            <label for="mapType">Map Type:</label>
+            <select id="mapType">
+                <option value="satellite">Satellite</option>
+                <option value="topographic">Topographic</option>
+                <option value="streets">Streets</option>
+                <option value="humanitarian">Humanitarian</option>
+            </select>
+            <br>
+            <label for="weatherType">Weather Layer:</label>
+            <select id="weatherType">
+                <option value="">None</option>
+                <option value="clouds_new">Clouds</option>
+                <option value="precipitation_new">Precipitation</option>
+                <option value="pressure_new">Sea level pressure</option>
+                <option value="wind_new">Wind speed</option>
+                <option value="temp_new">Temperature</option>
+            </select>
+            <div class="spacer"></div>
+            <button onclick="saveSettings()" class="btn">Save Settings</button>
         </div>
     </div>
 
     <script>
-        let currentLat, currentLon, map, locateControl, addingPin = false, editingPinId = null;
+        let currentLat, currentLon, map, locateControl, addingPin = false, editingPinId = null, weatherLayer = null, baseLayer;
 
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the map and set its view to the user's location
@@ -412,7 +415,7 @@
             }).setView([0, 0], 2); // Initial view set to [0, 0] and zoom level 2
 
             // Add a tile layer to the map (using Esri World Imagery tiles for a realistic view)
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             }).addTo(map);
 
@@ -430,6 +433,9 @@
                     title: "Show my location" // Customize the title
                 }
             }).addTo(map).start();
+
+            // Load saved settings
+            loadSettings();
 
             // Add event listener for adding pin
             map.on('click', function(e) {
@@ -526,80 +532,60 @@
             }
 
             function showUploads(camera_id, camera_name) {
-    fetch(`/get_uploads_by_camera/${camera_id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const uploadsList = document.getElementById('uploadsList');
-                const cameraNameTitle = document.getElementById('cameraNameTitle');
-                const cameraIdTitle = document.getElementById('cameraIdTitle');
-                uploadsList.innerHTML = '';
-                cameraNameTitle.textContent = camera_name;
-                cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
-                data.uploads.forEach(upload => {
-                    const animalIcon = upload.animal.toLowerCase() + '_white.png';
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <div style="display: flex; align-items: center;">
-                            <div>
-                                <div>File: ${upload.filepath}</div>
-                                <div>Duration: ${parseInt(upload.duration)}s</div>
-                                <div>Camera ID: ${upload.camera_id}</div>
-                                <div>Animal: ${upload.animal}</div>
-                                <div>Date: ${upload.date}</div>
-                                <div>Time: ${upload.time}</div>
-                            </div>
-                            <div style="margin-left: 70px;">
-                                <img src="/static/${animalIcon}" alt="${upload.animal}" style="width: 50px; height: 50px;">
-                            </div>
-                        </div>
-                        <div class="btn-container" style="margin-left: -20px;">
-                            <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
-                            <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
-                            <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
-                        </div>`;
-                    uploadsList.appendChild(li);
-                });
-                document.getElementById('uploadsModal').style.display = 'block';
-            } else {
-                console.error(data.message);
+                fetch(`/get_uploads_by_camera/${camera_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const uploadsList = document.getElementById('uploadsList');
+                            const cameraNameTitle = document.getElementById('cameraNameTitle');
+                            const cameraIdTitle = document.getElementById('cameraIdTitle');
+                            uploadsList.innerHTML = '';
+                            cameraNameTitle.textContent = camera_name;
+                            cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
+                            data.uploads.forEach(upload => {
+                                const li = document.createElement('li');
+                                const animalIcon = upload.animal.toLowerCase() + '_white.png';
+                                li.innerHTML = `
+                                    <div style="display: flex; align-items: center;">
+                                        <div>
+                                            <div>File: ${upload.filepath}</div>
+                                            <div>Duration: ${parseInt(upload.duration)}s</div>
+                                            <div>Camera ID: ${upload.camera_id}</div>
+                                            <div>Animal: ${upload.animal}</div>
+                                            <div>Date: ${upload.date}</div>
+                                            <div>Time: ${upload.time}</div>
+                                        </div>
+                                        <div style="margin-left: 70px;">
+                                            <img src="/static/${animalIcon}" alt="${upload.animal}" style="width: 50px; height: 50px;">
+                                        </div>
+                                    </div>
+                                    <div class="btn-container">
+                                        <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
+                                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                                        <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
+                                    </div>`;
+                                uploadsList.appendChild(li);
+                            });
+                            document.getElementById('uploadsModal').style.display = 'block';
+                        } else {
+                            console.error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching uploads:', error);
+                    });
             }
-        })
-        .catch(error => {
-            console.error('Error fetching uploads:', error);
-        });
-}
-
-// Get location on load
-getLocation();
-
-
-// Get location on load
-getLocation();
-
 
             // Get location on load
             getLocation();
         });
 
         function openSettings() {
-            window.location.href = '/settings';
+            document.getElementById('settingsModal').style.display = 'block';
         }
 
-        function showMap() {
-            window.location.href = '/home';
-        }
-
-        function showAssistant() {
-            window.location.href = '/upload';
-        }
-
-        function showProfile() {
-            window.location.href = '/profile';
-        }
-
-        function customAction() {
-            alert('Custom action button clicked!');
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
         }
 
         function togglePopup() {
@@ -709,15 +695,8 @@ getLocation();
             document.getElementById('uploadsModal').style.display = 'none';
         }
 
-        function closeEditUploadModal() {
-            document.getElementById('editUploadModal').style.display = 'none';
-        }
-
-        function closeVideoModal() {
-            document.getElementById('videoModal').style.display = 'none';
-            var video = document.getElementById('videoPlayer');
-            video.pause();
-            video.currentTime = 0;
+        function closeEditPinModal() {
+            document.getElementById('editPinModal').style.display = 'none';
         }
 
         function goToCurrentLocation() {
@@ -791,87 +770,66 @@ getLocation();
             });
         }
 
-        // Open edit upload modal
-        function openEditUploadModal(filepath, cameraId, animal, date, time) {
-            document.getElementById('editCameraId').value = cameraId;
-            document.getElementById('editAnimal').value = animal;
-            document.getElementById('editDate').value = date;
-            document.getElementById('editTime').value = time;
-            editingUploadFilepath = filepath;
-            document.getElementById('editUploadModal').style.display = 'block';
-        }
+        function saveSettings() {
+            const mapType = document.getElementById('mapType').value;
+            const weatherType = document.getElementById('weatherType').value;
 
-        // Update upload details
-        function updateUpload() {
-            const newCameraId = document.getElementById('editCameraId').value;
-            const newAnimal = document.getElementById('editAnimal').value;
-            const newDate = document.getElementById('editDate').value;
-            const newTime = document.getElementById('editTime').value;
-
-            if (!newCameraId || !newAnimal || !newDate || !newTime) {
-                alert('Please fill in all fields');
-                return;
+            // Remove existing base layer
+            if (baseLayer) {
+                map.removeLayer(baseLayer);
             }
 
-            const updatedUpload = {
-                filepath: editingUploadFilepath,
-                camera_id: newCameraId,
-                animal: newAnimal,
-                date: newDate,
-                time: newTime
-            };
+            // Update the map type
+            switch (mapType) {
+                case 'satellite':
+                    baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                    }).addTo(map);
+                    break;
+                case 'topographic':
+                    baseLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+                    }).addTo(map);
+                    break;
+                case 'streets':
+                    baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+                    break;
+                case 'humanitarian':
+            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team'
+            }).addTo(map);
+            break;
+            }
 
-            fetch(`/update_upload`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedUpload)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    closeEditUploadModal();
-                    window.location.reload(); // Refresh the page after updating
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error updating upload:', error);
-            });
+            // Remove existing weather layer
+            if (weatherLayer) {
+                map.removeLayer(weatherLayer);
+            }
+
+            // Add the new weather layer
+            if (weatherType) {
+                weatherLayer = L.tileLayer(`https://tile.openweathermap.org/map/${weatherType}/{z}/{x}/{y}.png?appid=70371699840c4120cc43d3f7e5607162`, {
+                    attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+                }).addTo(map);
+            }
+
+            // Save settings to local storage
+            localStorage.setItem('mapType', mapType);
+            localStorage.setItem('weatherType', weatherType);
+
+            closeSettingsModal();
         }
 
-        // Delete upload
-        function deleteUpload(filepath) {
-            fetch(`/delete_upload`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ filepath: filepath })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload(); // Refresh the page after deletion
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting upload:', error);
-            });
-        }
+        function loadSettings() {
+            const mapType = localStorage.getItem('mapType') || 'satellite';
+            const weatherType = localStorage.getItem('weatherType') || '';
 
-        // View video
-        function viewVideo(filepath) {
-            const videoSource = document.getElementById('videoSource');
-            videoSource.src = `/uploads/${filepath}`;
-            videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
-            const videoPlayer = document.getElementById('videoPlayer');
-            videoPlayer.load();
-            document.getElementById('videoModal').style.display = 'block';
+            document.getElementById('mapType').value = mapType;
+            document.getElementById('weatherType').value = weatherType;
+
+            saveSettings(); // Apply settings immediately on load
         }
     </script>
 </body>

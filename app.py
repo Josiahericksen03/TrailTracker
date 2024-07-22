@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory, request, send_file
 from flask_wtf import FlaskForm
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -15,6 +15,8 @@ from PIL import Image
 import cv2
 import pytesseract
 from moviepy.editor import VideoFileClip
+import matplotlib.pyplot as plt
+import io
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -334,29 +336,6 @@ def profile():
         return redirect(url_for('login'))
 
 
-@app.route('/settings', methods=['GET', 'POST'])
-def settings():
-    if 'username' in session:
-        username = session['username']
-        user = db.users.find_one({'username': username})
-
-        if request.method == 'POST':
-            name = request.form['name']
-            email = request.form['email']
-
-            db.users.update_one(
-                {'username': username},
-                {'$set': {'name': name, 'email': email}}
-            )
-            flash('Settings updated successfully')
-            return redirect(url_for('settings'))
-
-        return render_template('settings.html', user=user, title='Settings')
-    else:
-        flash('You need to log in first')
-        return redirect(url_for('login'))
-
-
 @app.route('/get_uploads_by_camera/<camera_id>', methods=['GET'])
 def get_uploads_by_camera(camera_id):
     username = session.get('username')
@@ -504,7 +483,77 @@ def update_upload():
 
     return jsonify({'status': 'success', 'message': 'Upload updated successfully'})
 
+@app.route('/plot.png')
+def plot_png():
+    fig = create_figure()
+    output = io.BytesIO()
+    fig.savefig(output, format='png')
+    output.seek(0)
+    return send_file(output, mimetype='image/png')
 
+def create_figure():
+    fig, ax = plt.subplots()
+    ax.bar(['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'], [12, 19, 3, 5, 2, 3])
+    ax.set_xlabel('Colors')
+    ax.set_ylabel('Votes')
+    ax.set_title('Votes by Color')
+    return fig
+
+@app.route('/get_uploads', methods=['GET'])
+def get_uploads():
+    username = session.get('username')
+    if not username:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    sort_by = request.args.get('sort_by', 'camera')
+    filter_value = request.args.get('filter', None)
+
+    user = db.users.find_one({'username': username})
+    if not user or 'uploads' not in user:
+        return jsonify({'status': 'error', 'message': 'No uploads found'})
+
+    uploads = user['uploads']
+
+    data = []
+    if sort_by == 'animal' and filter_value:
+        camera_counts = {}
+        for upload in uploads:
+            if upload.get('animal') == filter_value:
+                camera_id = upload.get('camera_id')
+                camera_counts[camera_id] = camera_counts.get(camera_id, 0) + 1
+        data = [{'label': camera_id, 'count': count} for camera_id, count in camera_counts.items()]
+
+    elif sort_by == 'camera':
+        animal_types = ['Bear', 'Boar', 'Deer', 'Bobcat', 'Turkey', 'Unidentified']
+        camera_counts = {}
+        for upload in uploads:
+            camera_id = upload.get('camera_id')
+            if filter_value and camera_id != filter_value:
+                continue
+            animal = upload.get('animal')
+            if camera_id not in camera_counts:
+                camera_counts[camera_id] = {animal: 0 for animal in animal_types}
+            camera_counts[camera_id][animal] = camera_counts[camera_id].get(animal, 0) + 1
+        for camera_id, counts in camera_counts.items():
+            for animal, count in counts.items():
+                data.append({'label': animal, 'count': count})
+
+    return jsonify(data)
+
+
+@app.route('/get_camera_ids', methods=['GET'])
+def get_camera_ids():
+    username = session.get('username')
+
+    if not username:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    user = db.users.find_one({'username': username})
+    if not user or 'uploads' not in user:
+        return jsonify({'status': 'error', 'message': 'No uploads found'})
+
+    camera_ids = list(set(upload['camera_id'] for upload in user['uploads']))
+    return jsonify(camera_ids)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
