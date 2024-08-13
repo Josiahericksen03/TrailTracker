@@ -34,7 +34,7 @@
 
         .bottom-bar {
             bottom: 0;
-            justify-content: center; /* Center the buttons */
+            justify-content: center;
         }
 
         .title {
@@ -51,8 +51,8 @@
             cursor: pointer;
             padding: 10px;
             text-align: center;
-            margin: 0 40px; /* Add margin for spacing between buttons */
-            border-radius: 50%; /* Make hover shape round */
+            margin: 0 40px;
+            border-radius: 50%;
         }
 
         .nav-btn:hover {
@@ -154,7 +154,7 @@
         }
 
         .leaflet-bar .leaflet-control-locate a:after {
-            content: '\1F4CD'; /* Unicode character for map pin */
+            content: '\1F4CD';
             font-size: 20px;
         }
 
@@ -168,30 +168,27 @@
             display: none;
             position: fixed;
             z-index: 1002;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            max-height: 400px;
+            background-color: #323232;
+            border: 1px solid #888;
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
 
         .modal-content {
-    background-color: #323232;
-    color: white;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 8px;
-    text-align: center;
-    height: 60vh; /* Adjust height to fit content */
-    overflow-y: auto; /* Make content scrollable */
-    position: relative; /* Ensure it stays centered */
-    top: 50%; /* Center vertically */
-    transform: translateY(-50%); /* Center vertically */
-}
+            background-color: #323232;
+            color: white;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
 
         .modal-content input, .modal-content button, .modal-content select {
             color: black;
@@ -288,16 +285,21 @@
         /* Button container styles */
         .btn-container {
             margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 5px; /* Reduce the gap between buttons */
+            flex-wrap: wrap; /* Allow wrapping */
         }
 
         .btn {
-            margin-right: 10px;
             background-color: #444;
             color: white;
             border: none;
             border-radius: 4px;
             padding: 5px 10px;
             cursor: pointer;
+            flex-grow: 1; /* Allow buttons to grow */
+            margin: 5px; /* Add margin to reduce gap */
         }
 
         .btn:hover {
@@ -316,521 +318,765 @@
             margin: 10px 0;
         }
     </style>
+
     <!-- Include the Leaflet CSS and JS libraries -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <!-- Include the Leaflet.Locate plugin CSS and JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"/>
     <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="top-bar">
-        <div class="title">Trail Tracker</div>
-    </div>
-    <div class="bottom-bar">
-        <button class="nav-btn" onclick="location.href='/home'">
-            <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
-        </button>
-        <button class="nav-btn" onclick="location.href='/upload'">
-            <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
-        </button>
-        <button class="nav-btn" onclick="location.href='/profile'">
-            <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
-        </button>
-    </div>
-    <button class="settings-btn" onclick="openSettings()">
-        <img src="{{ url_for('static', filename='settings_icon.png') }}" alt="Settings">
+<div id="map"></div>
+<div class="top-bar">
+    <div class="title">Trail Tracker</div>
+</div>
+<div class="bottom-bar">
+    <button class="nav-btn" onclick="location.href='/home'">
+        <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
     </button>
-    <button class="round-btn" onclick="togglePopup()">+</button>
-    <div class="popup-menu" id="popupMenu">
-        <button onclick="addPin()">Add Pin</button>
-        <button onclick="showPins()">My Pins</button>
-    </div>
+    <button class="nav-btn" onclick="location.href='/upload'">
+        <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
+    </button>
+    <button class="nav-btn" onclick="location.href='/profile'">
+        <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
+    </button>
+</div>
+<button class="settings-btn" onclick="openSettings()">
+    <img src="{{ url_for('static', filename='settings_icon.png') }}" alt="Settings">
+</button>
+<button class="round-btn" onclick="togglePopup()">+</button>
+<div class="popup-menu" id="popupMenu">
+    <button onclick="addPin()">Add Pin</button>
+    <button onclick="showPins()">My Pins</button>
+</div>
 
-    <!-- Modal for adding/editing pin -->
-    <div id="pinModal" class="modal" style="z-index: 1003;">
-        <div class="modal-content">
-            <span class="close" onclick="closePinModal()">&times;</span>
-            <h2 id="pinModalTitle">Add Pin</h2>
-            <input type="text" id="pinName" placeholder="Enter name" />
-            <input type="text" id="pinCameraId" placeholder="Enter camera ID" />
-            <button id="pinModalSaveBtn" onclick="savePin()">Save Pin</button>
-        </div>
+<!-- Modal for adding/editing pin -->
+<div id="pinModal" class="modal" style="z-index: 1003;">
+    <div class="modal-content">
+        <span class="close" onclick="closePinModal()">&times;</span>
+        <h2 id="pinModalTitle">Add Pin</h2>
+        <input type="text" id="pinName" placeholder="Enter name"/>
+        <input type="text" id="pinCameraId" placeholder="Enter camera ID"/>
+        <button id="pinModalSaveBtn" onclick="savePin()">Save Pin</button>
     </div>
+</div>
 
-    <!-- Modal for showing saved pins -->
-    <div id="pinsModal" class="pins-modal" style="z-index: 1002;">
-        <div class="pins-modal-content">
-            <span class="close" onclick="closePinsModal()">&times;</span>
-            <h2>Saved Pins</h2>
-            <ul id="pinsList"></ul>
-        </div>
+<!-- Modal for showing saved pins -->
+<div id="pinsModal" class="pins-modal" style="z-index: 1002;">
+    <div class="pins-modal-content">
+        <span class="close" onclick="closePinsModal()">&times;</span>
+        <h2>Saved Pins</h2>
+        <ul id="pinsList"></ul>
     </div>
+</div>
 
-    <!-- Modal for showing uploads -->
-    <div id="uploadsModal" class="modal" style="z-index: 1002;">
-        <div class="modal-content">
-            <span class="close" onclick="closeUploadsModal()">&times;</span>
-            <h2 id="cameraNameTitle"></h2>
-            <h3 id="cameraIdTitle"></h3>
-            <ul id="uploadsList"></ul>
-        </div>
+<!-- Modal for showing uploads -->
+<div id="uploadsModal" class="modal" style="z-index: 1002;">
+    <div class="modal-content">
+        <span class="close" onclick="closeUploadsModal()">&times;</span>
+        <h2 id="cameraNameTitle"></h2>
+        <h3 id="cameraIdTitle"></h3>
+        <ul id="uploadsList" style="text-align: left;"></ul>
     </div>
+</div>
 
-    <!-- Modal for settings -->
-    <div id="settingsModal" class="modal" style="z-index: 1002;">
-        <div class="modal-content">
-            <span class="close" onclick="closeSettingsModal()">&times;</span>
-            <h2>Settings</h2>
-            <label for="mapType">Map Type:</label>
-            <select id="mapType">
-                <option value="satellite">Satellite</option>
-                <option value="topographic">Topographic</option>
-                <option value="streets">Streets</option>
-                <option value="humanitarian">Humanitarian</option>
-            </select>
-            <br>
-            <label for="weatherType">Weather Layer:</label>
-            <select id="weatherType">
-                <option value="">None</option>
-                <option value="clouds_new">Clouds</option>
-                <option value="precipitation_new">Precipitation</option>
-                <option value="pressure_new">Sea level pressure</option>
-                <option value="wind_new">Wind speed</option>
-                <option value="temp_new">Temperature</option>
-            </select>
+<!-- Modal for settings -->
+<div id="settingsModal" class="modal" style="z-index: 1002;">
+    <div class="modal-content">
+        <span class="close" onclick="closeSettingsModal()">&times;</span>
+        <h2>Settings</h2>
+        <label for="mapType">Map Type:</label>
+        <select id="mapType">
+            <option value="satellite">Satellite</option>
+            <option value="topographic">Topographic</option>
+            <option value="streets">Streets</option>
+            <option value="humanitarian">Humanitarian</option>
+        </select>
+        <br>
+        <label for="weatherType">Weather Layer:</label>
+        <select id="weatherType">
+            <option value="">None</option>
+            <option value="clouds_new">Clouds</option>
+            <option value="precipitation_new">Precipitation</option>
+            <option value="pressure_new">Sea level pressure</option>
+            <option value="wind_new">Wind speed</option>
+            <option value="temp_new">Temperature</option>
+        </select>
+        <div class="spacer"></div>
+        <button onclick="saveSettings()" class="btn">Save Settings</button>
+    </div>
+</div>
+
+<!-- Modal for editing pin -->
+<div id="editPinModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditPinModal()">&times;</span>
+        <h2>Edit Pin</h2>
+        <input type="text" id="editPinName" placeholder="Enter new name" class="input"/>
+        <div class="spacer"></div>
+        <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" class="input"/>
+        <div class="spacer"></div>
+        <button onclick="updatePin()" class="btn" style="color: white;">Save Changes</button>
+    </div>
+</div>
+
+<!-- Modal for viewing video -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeVideoModal()">&times;</span>
+        <video id="videoPlayer" width="100%" controls>
+            <source id="videoSource" src="" type="">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+</div>
+
+<!-- Modal for editing upload -->
+<div id="editUploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditUploadModal()">&times;</span>
+        <h2>Wrong info? Correct it here</h2>
+        <form id="editUploadForm">
+            <label for="editCameraId" class="label">Camera ID:</label>
+            <input type="text" id="editCameraId" class="input"/>
             <div class="spacer"></div>
-            <button onclick="saveSettings()" class="btn">Save Settings</button>
-        </div>
+            <label for="editAnimal" class="label">Animal:</label>
+            <input type="text" id="editAnimal" class="input"/>
+            <div class="spacer"></div>
+            <label for="editDate" class="label">Date:</label>
+            <input type="text" id="editDate" class="input"/>
+            <div class="spacer"></div>
+            <label for="editTime" class="label">Time:</label>
+            <input type="text" id="editTime" class="input"/>
+            <div class="spacer"></div>
+            <button type="button" onclick="updateUpload()" class="btn">Save Changes</button>
+        </form>
     </div>
+</div>
 
-    <script>
-        let currentLat, currentLon, map, locateControl, addingPin = false, editingPinId = null, weatherLayer = null, baseLayer;
+<script>
+    const API_URL = 'http://localhost:5001/api';
+    let currentLat, currentLon, map, locateControl, addingPin = false, editingPinId = null, weatherLayer = null,
+        baseLayer;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the map and set its view to the user's location
-            map = L.map('map', {
-                zoomControl: false // Disable default zoom control
-            }).setView([0, 0], 2); // Initial view set to [0, 0] and zoom level 2
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize the map and set its view to the user's location
+        map = L.map('map', {
+            zoomControl: false // Disable default zoom control
+        }).setView([0, 0], 2); // Initial view set to [0, 0] and zoom level 2
 
-            // Add a tile layer to the map (using Esri World Imagery tiles for a realistic view)
-            baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            }).addTo(map);
+        // Add a tile layer to the map (using Esri World Imagery tiles for a realistic view)
+        baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }).addTo(map);
 
-            // Add the locate control to the map
-            locateControl = L.control.locate({
-                locateOptions: {
-                    enableHighAccuracy: true
-                },
-                drawCircle: true, // enable the default circle marker
-                showCompass: true, // Enable the compass direction
-                icon: 'fa fa-map-marker', // Set the icon class (optional)
-                iconLoading: 'fa fa-spinner fa-spin', // Set the loading icon class (optional)
-                onLocationError: showError, // Custom error handler
-                strings: {
-                    title: "Show my location" // Customize the title
-                }
-            }).addTo(map).start();
-
-            // Load saved settings
-            loadSettings();
-
-            // Add event listener for adding pin
-            map.on('click', function(e) {
-                if (addingPin) {
-                    const { lat, lng } = e.latlng;
-                    currentLat = lat;
-                    currentLon = lng;
-                    document.getElementById('pinModalTitle').textContent = 'Add Pin';
-                    document.getElementById('pinName').value = '';
-                    document.getElementById('pinCameraId').value = '';
-                    document.getElementById('pinModalSaveBtn').setAttribute('onclick', 'savePin()');
-                    document.getElementById('pinModal').style.display = 'block';
-                    addingPin = false;
-                }
-            });
-
-            // Load saved pins
-            loadPins();
-
-            function getLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(showPosition, showError);
-                } else {
-                    console.error("Geolocation is not supported by this browser.");
-                }
+        // Add the locate control to the map
+        locateControl = L.control.locate({
+            locateOptions: {
+                enableHighAccuracy: true
+            },
+            drawCircle: true,
+            showCompass: true,
+            icon: 'fa fa-map-marker',
+            iconLoading: 'fa fa-spinner fa-spin',
+            onLocationError: showError,
+            strings: {
+                title: "Show my location"
             }
+        }).addTo(map).start();
 
-            function showPosition(position) {
-                var lat = position.coords.latitude;
-                var lon = position.coords.longitude;
+        // Load saved settings
+        loadSettings();
+
+        // Add event listener for adding pin
+        map.on('click', function (e) {
+            if (addingPin) {
+                const {lat, lng} = e.latlng;
                 currentLat = lat;
-                currentLon = lon;
-
-                // Update map view and add a marker
-                map.setView([lat, lon], 13); // Zoom level 13 for a closer view
-                L.circleMarker([lat, lon], { radius: 10, color: "#007bff" }).addTo(map); // Add a blue circle marker
-
-                sendLocationToServer(lat, lon);
+                currentLon = lng;
+                document.getElementById('pinModalTitle').textContent = 'Add Pin';
+                document.getElementById('pinName').value = '';
+                document.getElementById('pinCameraId').value = '';
+                document.getElementById('pinModalSaveBtn').setAttribute('onclick', 'savePin()');
+                document.getElementById('pinModal').style.display = 'block';
+                addingPin = false;
             }
-
-            function showError(error) {
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        console.error("User denied the request for Geolocation.")
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        console.error("Location information is unavailable.")
-                        break;
-                    case error.TIMEOUT:
-                        console.error("The request to get user location timed out.")
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        console.error("An unknown error occurred.")
-                        break;
-                }
-            }
-
-            function sendLocationToServer(lat, lon) {
-                fetch('/save_location', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ latitude: lat, longitude: lon })
-                }).then(response => {
-                    return response.json();
-                }).then(data => {
-                    console.log('Location saved:', data);
-                }).catch(error => {
-                    console.error('Error:', error);
-                });
-            }
-
-            function loadPins() {
-                fetch('/get_pins')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            data.pins.forEach(pin => {
-                                const marker = L.marker([pin.latitude, pin.longitude])
-                                    .bindPopup(`<div class="popup-content">Name: ${pin.name}<br>Camera ID: ${pin.camera_id}</div>`)
-                                    .addTo(map);
-                                marker.on('click', function() {
-                                    showUploads(pin.camera_id, pin.name);
-                                });
-                            });
-                        } else {
-                            console.error(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching pins:', error);
-                    });
-            }
-
-            function showUploads(camera_id, camera_name) {
-                fetch(`/get_uploads_by_camera/${camera_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            const uploadsList = document.getElementById('uploadsList');
-                            const cameraNameTitle = document.getElementById('cameraNameTitle');
-                            const cameraIdTitle = document.getElementById('cameraIdTitle');
-                            uploadsList.innerHTML = '';
-                            cameraNameTitle.textContent = camera_name;
-                            cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
-                            data.uploads.forEach(upload => {
-                                const li = document.createElement('li');
-                                const animalIcon = upload.animal.toLowerCase() + '_white.png';
-                                li.innerHTML = `
-                                    <div style="display: flex; align-items: center;">
-                                        <div>
-                                            <div>File: ${upload.filepath}</div>
-                                            <div>Duration: ${parseInt(upload.duration)}s</div>
-                                            <div>Camera ID: ${upload.camera_id}</div>
-                                            <div>Animal: ${upload.animal}</div>
-                                            <div>Date: ${upload.date}</div>
-                                            <div>Time: ${upload.time}</div>
-                                        </div>
-                                        <div style="margin-left: 70px;">
-                                            <img src="/static/${animalIcon}" alt="${upload.animal}" style="width: 50px; height: 50px;">
-                                        </div>
-                                    </div>
-                                    <div class="btn-container">
-                                        <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
-                                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
-                                        <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
-                                    </div>`;
-                                uploadsList.appendChild(li);
-                            });
-                            document.getElementById('uploadsModal').style.display = 'block';
-                        } else {
-                            console.error(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching uploads:', error);
-                    });
-            }
-
-            // Get location on load
-            getLocation();
         });
 
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'block';
-        }
+        // Load saved pins
+        loadPins();
 
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function togglePopup() {
-            var popup = document.getElementById('popupMenu');
-            if (popup.style.display === 'none' || popup.style.display === '') {
-                popup.style.display = 'block';
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
             } else {
-                popup.style.display = 'none';
+                console.error("Geolocation is not supported by this browser.");
             }
         }
 
-        function addPin() {
-            addingPin = true;
-            togglePopup(); // Close the popup menu
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+            currentLat = lat;
+            currentLon = lon;
+
+            map.setView([lat, lon], 13);
+            L.circleMarker([lat, lon], {radius: 10, color: "#007bff"}).addTo(map);
+
+            sendLocationToServer(lat, lon);
         }
 
-        function savePin() {
-            const name = document.getElementById('pinName').value;
-            const cameraId = document.getElementById('pinCameraId').value;
-
-            if (!name || !cameraId) {
-                alert('Please enter both a name and camera ID');
-                return;
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    console.error("User denied the request for Geolocation.")
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    console.error("Location information is unavailable.")
+                    break;
+                case error.TIMEOUT:
+                    console.error("The request to get user location timed out.")
+                    break;
+                case error.UNKNOWN_ERROR:
+                    console.error("An unknown error occurred.")
+                    break;
             }
+        }
 
-            const pin = { name, camera_id: cameraId, latitude: currentLat, longitude: currentLon };
-
-            fetch('/save_pin', {
+        function sendLocationToServer(lat, lon) {
+            fetch(`${API_URL}/users/save_location`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(pin)
+                body: JSON.stringify({username: sessionStorage.getItem('username'), latitude: lat, longitude: lon})
+            }).then(response => {
+                return response.json();
+            }).then(data => {
+                console.log('Location saved:', data);
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function loadPins() {
+            fetch('/get_pins', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        L.marker([currentLat, currentLon])
-                            .bindPopup(`<div class="popup-content">Name: ${name}<br>Camera ID: ${cameraId}</div>`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    data.pins.forEach(pin => {
+                        const marker = L.marker([pin.latitude, pin.longitude])
+                            .bindPopup(`<div class="popup-content">Name: ${pin.name}<br>Camera ID: ${pin.camera_id}</div>`)
                             .addTo(map);
-                        closePinModal();
-                    } else {
-                        console.error(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error saving pin:', error);
-                });
+                        marker.on('click', function() {
+                            showUploads(pin.camera_id, pin.name);
+                        });
+                    });
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching pins:', error);
+            });
         }
 
-        function showPins() {
-            fetch('/get_pins')
+        function showUploads(camera_id, camera_name) {
+            fetch(`/get_uploads_by_camera/${camera_id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        const pinsList = document.getElementById('pinsList');
-                        pinsList.innerHTML = '';
-                        data.pins.forEach(pin => {
+                        const uploadsList = document.getElementById('uploadsList');
+                        const cameraNameTitle = document.getElementById('cameraNameTitle');
+                        const cameraIdTitle = document.getElementById('cameraIdTitle');
+                        uploadsList.innerHTML = '';
+                        cameraNameTitle.textContent = camera_name;
+                        cameraIdTitle.textContent = `Camera ID: ${camera_id}`;
+                        data.uploads.forEach(upload => {
                             const li = document.createElement('li');
-                            li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
-                            const btnContainer = document.createElement('div');
-                            btnContainer.className = 'btn-container';
-
-                            const goToBtn = document.createElement('button');
-                            goToBtn.textContent = 'Go To';
-                            goToBtn.className = 'btn';
-                            goToBtn.onclick = () => goToPin(pin.latitude, pin.longitude);
-
-                            const editBtn = document.createElement('button');
-                            editBtn.textContent = 'Edit';
-                            editBtn.className = 'btn';
-                            editBtn.onclick = () => openEditPinModal(pin);
-
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.textContent = 'Delete';
-                            deleteBtn.className = 'btn btn-delete';
-                            deleteBtn.onclick = () => deletePin(pin.camera_id);
-
-                            btnContainer.appendChild(goToBtn);
-                            btnContainer.appendChild(editBtn);
-                            btnContainer.appendChild(deleteBtn);
-
-                            li.appendChild(btnContainer);
-                            pinsList.appendChild(li);
+                            const animalIcon = upload.animal.toLowerCase() + '_white.png';
+                            li.innerHTML = `
+                    <div style="display: flex; align-items: center;">
+                        <div>
+                            <div>File: ${upload.filepath}</div>
+                            <div>Duration: ${parseInt(upload.duration)}s</div>
+                            <div>Camera ID: ${upload.camera_id}</div>
+                            <div>Animal: ${upload.animal}</div>
+                            <div>Date: ${upload.date}</div>
+                            <div>Time: ${upload.time}</div>
+                        </div>
+                        <div style="margin-left: 30px;">
+                            <img src="/static/${animalIcon}" alt="${upload.animal}" style="width: 50px; height: 50px;">
+                        </div>
+                    </div>
+                    <div class="btn-container">
+                        <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
+                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                        <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
+                    </div>`;
+                            uploadsList.appendChild(li);
                         });
-                        document.getElementById('pinsModal').style.display = 'block';
+                        document.getElementById('uploadsModal').style.display = 'block';
                     } else {
                         console.error(data.message);
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching pins:', error);
+                    console.error('Error fetching uploads:', error);
                 });
-
-            togglePopup(); // Close the popup menu
         }
 
-        function closePinModal() {
-            document.getElementById('pinModal').style.display = 'none';
+        getLocation();
+    });
+
+    function openSettings() {
+        document.getElementById('settingsModal').style.display = 'block';
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function togglePopup() {
+        var popup = document.getElementById('popupMenu');
+        if (popup.style.display === 'none' || popup.style.display === '') {
+            popup.style.display = 'block';
+        } else {
+            popup.style.display = 'none';
+        }
+    }
+
+    function addPin() {
+        addingPin = true;
+        togglePopup();
+    }
+
+    function savePin() {
+        const name = document.getElementById('pinName').value;
+        const cameraId = document.getElementById('pinCameraId').value;
+
+        if (!name || !cameraId) {
+            alert('Please enter both a name and camera ID');
+            return;
         }
 
-        function closePinsModal() {
-            document.getElementById('pinsModal').style.display = 'none';
-        }
+        const pin = {
+            username: sessionStorage.getItem('username'),
+            name,
+            camera_id: cameraId,
+            latitude: currentLat,
+            longitude: currentLon
+        };
 
-        function closeUploadsModal() {
-            document.getElementById('uploadsModal').style.display = 'none';
-        }
-
-        function closeEditPinModal() {
-            document.getElementById('editPinModal').style.display = 'none';
-        }
-
-        function goToCurrentLocation() {
-            locateControl.start(); // Trigger the locate control to go to the current location
-        }
-
-        function goToPin(latitude, longitude) {
-            map.setView([latitude, longitude], 18); // Adjust the zoom level here
-            closePinsModal();
-        }
-
-        function openEditPinModal(pin) {
-            document.getElementById('pinModalTitle').textContent = 'Edit Pin';
-            document.getElementById('pinName').value = pin.name;
-            document.getElementById('pinCameraId').value = pin.camera_id;
-            document.getElementById('pinModalSaveBtn').setAttribute('onclick', 'updatePin()');
-            editingPinId = pin.camera_id;
-            document.getElementById('pinModal').style.display = 'block';
-            document.getElementById('pinModal').style.zIndex = '1003'; // Ensure it appears above the "Saved Pins" modal
-        }
-
-        function deletePin(camera_id) {
-            fetch(`/delete_pin/${camera_id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
+        fetch('/save_pin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pin)
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    showPins();
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting pin:', error);
-            });
-        }
-
-        function updatePin() {
-            const newName = document.getElementById('pinName').value;
-            const newCameraId = document.getElementById('pinCameraId').value;
-
-            if (!newName || !newCameraId) {
-                alert('Please enter both a new name and camera ID');
-                return;
-            }
-
-            const updatedPin = { name: newName, camera_id: newCameraId };
-
-            fetch(`/update_pin/${editingPinId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedPin)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
+                    L.marker([currentLat, currentLon])
+                        .bindPopup(`<div class="popup-content">Name: ${name}<br>Camera ID: ${cameraId}</div>`)
+                        .addTo(map);
                     closePinModal();
-                    showPins();
                 } else {
                     console.error(data.message);
                 }
             })
             .catch(error => {
-                console.error('Error updating pin:', error);
+                console.error('Error saving pin:', error);
             });
+    }
+
+    function showPins() {
+    fetch('/get_pins', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
         }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const pinsList = document.getElementById('pinsList');
+            pinsList.innerHTML = '';
+            data.pins.forEach(pin => {
+                const li = document.createElement('li');
+                li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'btn-container';
 
-        function saveSettings() {
-            const mapType = document.getElementById('mapType').value;
-            const weatherType = document.getElementById('weatherType').value;
+                const goToBtn = document.createElement('button');
+                goToBtn.textContent = 'Go To';
+                goToBtn.className = 'btn';
+                goToBtn.onclick = () => goToPin(pin.latitude, pin.longitude);
 
-            // Remove existing base layer
-            if (baseLayer) {
-                map.removeLayer(baseLayer);
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'btn';
+                editBtn.onclick = () => openEditPinModal(pin.camera_id, pin.name, pin.latitude, pin.longitude);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'btn btn-delete';
+                deleteBtn.onclick = () => deletePin(pin.camera_id);
+
+                btnContainer.appendChild(goToBtn);
+                btnContainer.appendChild(editBtn);
+                btnContainer.appendChild(deleteBtn);
+
+                li.appendChild(btnContainer);
+                pinsList.appendChild(li);
+            });
+            document.getElementById('pinsModal').style.display = 'block';
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching pins:', error);
+    });
+
+    togglePopup();
+}
+
+function openEditPinModal(cameraId, cameraName, latitude, longitude) {
+    document.getElementById('editPinName').value = cameraName;
+    document.getElementById('editPinCameraId').value = cameraId;
+    currentLat = latitude;
+    currentLon = longitude;
+    editingPinId = cameraId;
+    document.getElementById('editPinModal').style.display = 'block';
+}
+
+// Function to update the pin
+function updatePin() {
+    const newName = document.getElementById('editPinName').value;
+    const newCameraId = document.getElementById('editPinCameraId').value;
+
+    if (!newName || !newCameraId) {
+        alert('Please enter both a new name and camera ID');
+        return;
+    }
+
+    const updatedPin = {
+        username: sessionStorage.getItem('username'),
+        name: newName,
+        new_camera_id: newCameraId,
+        latitude: currentLat,
+        longitude: currentLon
+    };
+
+    fetch(`/update_pin/${editingPinId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedPin)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeEditPinModal();
+            updatePinOnMap(editingPinId, newName, newCameraId, currentLat, currentLon);
+            showPins(); // Refresh the pins list
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating pin:', error);
+    });
+}
+
+// Function to update pin on the map
+function updatePinOnMap(cameraId, name, newCameraId, latitude, longitude) {
+    // Find and update the pin on the map
+    map.eachLayer(function(layer) {
+        if (layer instanceof L.Marker) {
+            const popupContent = layer.getPopup().getContent();
+            if (popupContent.includes(`Camera ID: ${cameraId}`)) {
+                layer.setPopupContent(`<div class="popup-content">Name: ${name}<br>Camera ID: ${newCameraId}</div>`);
             }
+        }
+    });
+}
 
-            // Update the map type
-            switch (mapType) {
-                case 'satellite':
-                    baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                    }).addTo(map);
-                    break;
-                case 'topographic':
-                    baseLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
-                    }).addTo(map);
-                    break;
-                case 'streets':
-                    baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors'
-                    }).addTo(map);
-                    break;
-                case 'humanitarian':
-            baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team'
-            }).addTo(map);
+// Function to delete a pin
+function deletePin(cameraId) {
+    fetch(`/delete_pin/${cameraId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({username: sessionStorage.getItem('username')})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            removePinFromMap(cameraId);
+            showPins(); // Refresh the pins list
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting pin:', error);
+    });
+}
+// Function to remove pin from the map
+function removePinFromMap(cameraId) {
+    map.eachLayer(function(layer) {
+        if (layer instanceof L.Marker) {
+            const popupContent = layer.getPopup().getContent();
+            if (popupContent.includes(`Camera ID: ${cameraId}`)) {
+                map.removeLayer(layer);
+            }
+        }
+    });
+}
+
+// Function to open the Edit Upload modal
+function openEditUploadModal(filepath, cameraId, animal, date, time) {
+    document.getElementById('editCameraId').value = cameraId;
+    document.getElementById('editAnimal').value = animal;
+    document.getElementById('editDate').value = date;
+    document.getElementById('editTime').value = time;
+    editingUploadFilepath = filepath;
+    document.getElementById('editUploadModal').style.display = 'block';
+}
+
+// Function to update the upload
+function updateUpload() {
+    const newCameraId = document.getElementById('editCameraId').value;
+    const newAnimal = document.getElementById('editAnimal').value;
+    const newDate = document.getElementById('editDate').value;
+    const newTime = document.getElementById('editTime').value;
+
+    if (!newCameraId || !newAnimal || !newDate || !newTime) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const updatedUpload = {
+        username: sessionStorage.getItem('username'),
+        filepath: editingUploadFilepath,
+        camera_id: newCameraId,
+        animal: newAnimal,
+        date: newDate,
+        time: newTime
+    };
+
+    fetch('/update_upload', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedUpload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeEditUploadModal();
+            updateUploadInList(editingUploadFilepath, newCameraId, newAnimal, newDate, newTime);
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating upload:', error);
+    });
+}
+
+// Function to update upload in the list
+function updateUploadInList(filepath, cameraId, animal, date, time) {
+    const uploadsList = document.getElementById('uploadsList');
+    const listItems = uploadsList.getElementsByTagName('li');
+
+    for (let item of listItems) {
+        if (item.innerHTML.includes(filepath)) {
+            item.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <div>
+                        <div>File: ${filepath}</div>
+                        <div>Camera ID: ${cameraId}</div>
+                        <div>Animal: ${animal}</div>
+                        <div>Date: ${date}</div>
+                        <div>Time: ${time}</div>
+                    </div>
+                    <div style="margin-left: 30px;">
+                        <img src="/static/${animal.toLowerCase()}_white.png" alt="${animal}" style="width: 50px; height: 50px;">
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button class="btn" onclick="openEditUploadModal('${filepath}', '${cameraId}', '${animal}', '${date}', '${time}')">Edit</button>
+                    <button class="btn" onclick="viewVideo('${filepath}')">View Video</button>
+                    <button class="btn btn-delete" onclick="deleteUpload('${filepath}')">Delete</button>
+                </div>`;
+        }
+    }
+}
+
+// Function to delete an upload
+function deleteUpload(filepath) {
+    fetch('/delete_upload', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({filepath})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            removeUploadFromList(filepath);
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting upload:', error);
+    });
+}
+
+// Function to remove upload from the list
+function removeUploadFromList(filepath) {
+    const uploadsList = document.getElementById('uploadsList');
+    const listItems = uploadsList.getElementsByTagName('li');
+
+    for (let item of listItems) {
+        if (item.innerHTML.includes(filepath)) {
+            uploadsList.removeChild(item);
             break;
-            }
+        }
+    }
+}
 
-            // Remove existing weather layer
-            if (weatherLayer) {
-                map.removeLayer(weatherLayer);
-            }
+    function closePinModal() {
+        document.getElementById('pinModal').style.display = 'none';
+    }
 
-            // Add the new weather layer
-            if (weatherType) {
-                weatherLayer = L.tileLayer(`https://tile.openweathermap.org/map/${weatherType}/{z}/{x}/{y}.png?appid=70371699840c4120cc43d3f7e5607162`, {
-                    attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+    function closePinsModal() {
+        document.getElementById('pinsModal').style.display = 'none';
+    }
+
+    function closeUploadsModal() {
+        document.getElementById('uploadsModal').style.display = 'none';
+    }
+
+    function closeEditPinModal() {
+        document.getElementById('editPinModal').style.display = 'none';
+    }
+
+    function goToCurrentLocation() {
+        locateControl.start();
+    }
+
+    function goToPin(latitude, longitude) {
+        map.setView([latitude, longitude], 18);
+        closePinsModal();
+    }
+
+    function saveSettings() {
+        const mapType = document.getElementById('mapType').value;
+        const weatherType = document.getElementById('weatherType').value;
+
+        if (baseLayer) {
+            map.removeLayer(baseLayer);
+        }
+
+        switch (mapType) {
+            case 'satellite':
+                baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                 }).addTo(map);
-            }
-
-            // Save settings to local storage
-            localStorage.setItem('mapType', mapType);
-            localStorage.setItem('weatherType', weatherType);
-
-            closeSettingsModal();
+                break;
+            case 'topographic':
+                baseLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+                }).addTo(map);
+                break;
+            case 'streets':
+                baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                break;
+            case 'humanitarian':
+                baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team'
+                }).addTo(map);
+                break;
         }
 
-        function loadSettings() {
-            const mapType = localStorage.getItem('mapType') || 'satellite';
-            const weatherType = localStorage.getItem('weatherType') || '';
-
-            document.getElementById('mapType').value = mapType;
-            document.getElementById('weatherType').value = weatherType;
-
-            saveSettings(); // Apply settings immediately on load
+        if (weatherLayer) {
+            map.removeLayer(weatherLayer);
         }
-    </script>
+
+        if (weatherType) {
+            weatherLayer = L.tileLayer(`https://tile.openweathermap.org/map/${weatherType}/{z}/{x}/{y}.png?appid=70371699840c4120cc43d3f7e5607162`, {
+                attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+            }).addTo(map);
+        }
+
+        localStorage.setItem('mapType', mapType);
+        localStorage.setItem('weatherType', weatherType);
+
+        closeSettingsModal();
+    }
+
+    function loadSettings() {
+        const mapType = localStorage.getItem('mapType') || 'satellite';
+        const weatherType = localStorage.getItem('weatherType') || '';
+
+        document.getElementById('mapType').value = mapType;
+        document.getElementById('weatherType').value = weatherType;
+
+        saveSettings();
+    }
+
+    function viewVideo(filepath) {
+        var videoPlayer = document.getElementById('videoPlayer');
+        var videoSource = document.getElementById('videoSource');
+
+        videoSource.src = '';
+
+        if (filepath.toLowerCase().endsWith('.mp4') || filepath.toLowerCase().endsWith('.mov')) {
+            videoSource.src = `/uploads/${filepath}`;
+            videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
+        } else {
+            console.error('Unsupported video format');
+            return;
+        }
+
+        videoPlayer.load();
+        document.getElementById('videoModal').style.display = 'block';
+    }
+
+    function closeVideoModal() {
+        document.getElementById('videoModal').style.display = 'none';
+        var video = document.getElementById('videoPlayer');
+        video.pause();
+        video.currentTime = 0;
+    }
+
+    function closeEditUploadModal() {
+        document.getElementById('editUploadModal').style.display = 'none';
+    }
+
+</script>
 </body>
 </html>

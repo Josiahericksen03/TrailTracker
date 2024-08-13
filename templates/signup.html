@@ -11,4 +11,26 @@
         <button type="submit" class="btn">Sign Up</button>
     </form>
     <a href="{{ url_for('login') }}">Already have an account? Log In</a>
+    <style>
+        .signup-form .input {
+            margin-bottom: 15px; /* Add spacing between input boxes */
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .signup-form .btn {
+            margin-top: 15px; /* Add spacing above the button */
+            padding: 10px 15px;
+            background-color: #228B22;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .signup-form .btn:hover {
+            background-color: #196619;
+        }
+    </style>
 {% endblock %}

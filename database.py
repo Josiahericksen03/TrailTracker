@@ -38,8 +38,6 @@ def login_user(db, username, provided_password):
     user = db.users.find_one({"username": username})
     if user:
         print(f"User found: {user}")
-        print(f"Stored password hash: {user['password']}")
-        print(f"Provided password: {provided_password}")
         if verify_password(user['password'], provided_password):
             print("Password verified")
             return True, user

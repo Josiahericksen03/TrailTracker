@@ -93,6 +93,41 @@
             margin: 0 auto 10px;
         }
 
+        .upload-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .upload-details {
+            flex-grow: 1;
+        }
+
+        .upload-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Ensure content starts from the left */
+            margin-bottom: 20px;
+        }
+
+        .upload-details {
+            flex-grow: 1;
+            margin-right: 10px; /* Add space between text and icon */
+        }
+
+        .animal-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+
         .input, .btn {
             margin-bottom: 15px;
             padding: 10px;
@@ -272,22 +307,9 @@
             cursor: pointer;
         }
 
-        .upload-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
         .upload-item img {
             width: 50px;
             height: 50px;
-        }
-
-        .upload-details {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            margin-left: 10px;
         }
 
         .upload-details span {
@@ -331,397 +353,387 @@
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <div class="title">Trail Tracker</div>
-    </div>
-    <div class="container">
-        <h2 id="displayedUsername">Hello, {{ user.username }}</h2>
-        <img id="profilePicture" src="{{ user.profile_picture_url }}" alt="Profile Picture" class="profile-pic">
-        <button onclick="toggleEditProfile()" class="btn">Edit Profile</button>
+<div class="top-bar">
+    <div class="title">Trail Tracker</div>
+</div>
+<div class="container">
+    <h2 id="displayedUsername">Hello, {{ user.username }}</h2>
+    <img id="profilePicture" src="{{ user.profile_picture_url }}" alt="Profile Picture" class="profile-pic">
+    <button onclick="toggleEditProfile()" class="btn">Edit Profile</button>
+    <div class="spacer"></div>
+    <button onclick="toggleChangePassword()" class="btn">Change Password</button>
+    <div id="editProfile" class="dropdown">
+    <h3>Edit Profile</h3>
+    <form id="editProfileForm" enctype="multipart/form-data">
+        <label for="username" class="label">Change Username:</label>
+        <input type="text" name="username" id="username" placeholder="Username" class="input" value="{{ user.username }}">
         <div class="spacer"></div>
-        <button onclick="toggleChangePassword()" class="btn">Change Password</button>
-        <div id="editProfile" class="dropdown">
-            <h3>Edit Profile</h3>
-            <form id="editProfileForm" action="/update_profile" method="post" enctype="multipart/form-data">
-                <label for="username" class="label">Change Username:</label>
-                <input type="text" name="username" id="username" placeholder="Username" class="input" value="{{ user.username }}">
-                <div class="spacer"></div>
-                <label for="profile_picture" class="label">Change Profile Pic:</label>
-                <input type="file" name="profile_picture" id="profile_picture" class="input">
-                <div class="spacer"></div>
-                <button type="submit" class="btn">Save Changes</button>
-            </form>
-        </div>
-        <div id="changePassword" class="dropdown">
-            <h3>Change Password</h3>
-            <form id="changePasswordForm" action="/change_password" method="post">
-                <label for="current_password" class="label">Current Password:</label>
-                <input type="password" name="current_password" placeholder="Current Password" class="input">
-                <div class="spacer"></div>
-                <label for="new_password" class="label">New Password:</label>
-                <input type="password" name="new_password" placeholder="New Password" class="input">
-                <div class="spacer"></div>
-                <label for="confirm_password" class="label">Confirm New Password:</label>
-                <input type="password" name="confirm_password" placeholder="Confirm New Password" class="input">
-                <div class="spacer"></div>
-                <button type="submit" class="btn">Change Password</button>
-            </form>
-        </div>
-        <form action="/logout" method="post" style="margin-top: 10px;">
-            <button type="submit" class="logout-btn">Log Out</button>
+        <label for="profile_picture" class="label">Change Profile Pic:</label>
+        <input type="file" name="profile_picture" id="profile_picture" class="input">
+        <div class="spacer"></div>
+        <button type="submit" class="btn">Save Changes</button>
+    </form>
+</div>
+    <div id="changePassword" class="dropdown">
+        <h3>Change Password</h3>
+        <form id="changePasswordForm">
+            <label for="current_password" class="label">Current Password:</label>
+            <input type="password" name="current_password" placeholder="Current Password" class="input">
+            <div class="spacer"></div>
+            <label for="new_password" class="label">New Password:</label>
+            <input type="password" name="new_password" placeholder="New Password" class="input">
+            <div class="spacer"></div>
+            <label for="confirm_password" class="label">Confirm New Password:</label>
+            <input type="password" name="confirm_password" placeholder="Confirm New Password" class="input">
+            <div class="spacer"></div>
+            <button type="submit" class="btn">Change Password</button>
         </form>
+    </div>
+    <form id="logoutForm" style="margin-top: 10px;">
+        <button type="submit" class="logout-btn">Log Out</button>
+    </form>
 
-        <div class="camera-pins">
-            <h3>Saved Camera Pins</h3>
-            <ul>
-                {% for pin in user.gps_pins %}
-                <li>
+    <div class="camera-pins">
+        <h3>Saved Camera Pins</h3>
+        <ul id="camera-pins-list">
+            {% for pin in user.gps_pins %}
+                <li data-camera-id="{{ pin.camera_id }}">
                     <span>{{ pin.name }} (ID: {{ pin.camera_id }})</span>
                     <div class="btn-group">
                         <button onclick="viewActivity('{{ pin.camera_id }}', '{{ pin.name }}')" class="pin-btn">View Activity</button>
-                        <button onclick="openEditPinModal('{{ pin.camera_id }}', '{{ pin.name }}')" class="pin-btn">Edit</button>
+                        <button onclick="openEditPinModal('{{ pin.camera_id }}', '{{ pin.name }}', '{{ pin.latitude }}', '{{ pin.longitude }}')" class="pin-btn">Edit</button>
                         <button onclick="deletePin('{{ pin.camera_id }}')" class="pin-btn btn-delete">Delete</button>
                     </div>
                 </li>
-                {% endfor %}
-            </ul>
-        </div>
+            {% endfor %}
+        </ul>
+    </div>
 
-        <div class="upload-history">
-            <h3>Upload History</h3>
-            {% if user.uploads %}
+    <div class="upload-history">
+        <h3>Upload History</h3>
+        {% if user.uploads %}
             <ul id="recent-uploads">
                 {% for upload in user.uploads | reverse %}
-                <li class="upload-item" id="upload-{{ loop.index }}">
-                    <div class="upload-details">
-                        <span>File: {{ upload.filepath }}</span>
-                        <span>Duration: {{ upload.duration | int }}s</span>
-                        <span>Camera ID: {{ upload.camera_id }}</span>
-                        <span>Animal: {{ upload.animal }}</span>
-                        <span>Pulled Data: {{ upload.pulled_data }}</span>
-                        <span>Date: {{ upload.date }}</span>
-                        <span>Time: {{ upload.time }}</span>
-                    </div>
-                    <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
-                    <div class="upload-actions">
-                        <button class="round-btn" onclick="viewVideo('{{ upload.filepath }}')">View Video</button>
-                        <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
-                        <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ loop.index }}')">Delete</button>
-                    </div>
-                </li>
+                    <li class="upload-item" id="upload-{{ upload.filepath | replace('/', '-') }}">
+                        <div class="upload-details">
+                            <span>File: {{ upload.filepath }}</span>
+                            <span>Duration: {{ upload.duration | int }}s</span>
+                            <span>Camera ID: {{ upload.camera_id }}</span>
+                            <span>Animal: {{ upload.animal }}</span>
+                            <span>Date: {{ upload.date }}</span>
+                            <span>Time: {{ upload.time }}</span>
+                        </div>
+                        <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
+                        <div class="upload-actions">
+                            <button class="round-btn" onclick="viewVideo('{{ upload.filepath }}')">View Video</button>
+                            <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
+                            <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ upload.filepath | replace('/', '-') }}')">Delete</button>
+                        </div>
+                    </li>
                 {% endfor %}
             </ul>
-            {% else %}
+        {% else %}
             <p>No uploads available.</p>
-            {% endif %}
-        </div>
+        {% endif %}
     </div>
+</div>
 
-    <div class="bottom-bar">
-        <button class="nav-btn" onclick="location.href='/home'">
-            <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
-        </button>
-        <button class="nav-btn" onclick="location.href='/upload'">
-            <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
-        </button>
-        <button class="nav-btn" onclick="location.href='/profile'">
-            <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
-        </button>
+<div class="bottom-bar">
+    <button class="nav-btn" onclick="location.href='/home'">
+        <img src="{{ url_for('static', filename='map.png') }}" alt="Map">
+    </button>
+    <button class="nav-btn" onclick="location.href='/upload'">
+        <img src="{{ url_for('static', filename='tree.png') }}" alt="Assistant">
+    </button>
+    <button class="nav-btn" onclick="location.href='/profile'">
+        <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
+    </button>
+</div>
+
+<!-- Modal for showing uploads -->
+<div id="uploadsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeUploadsModal()">&times;</span>
+        <h2 id="cameraNameTitle"></h2>
+        <h3 id="cameraIdTitle"></h3>
+        <ul id="uploadsList"></ul>
     </div>
+</div>
 
-    <!-- Modal for showing uploads -->
-    <div id="uploadsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeUploadsModal()">&times;</span>
-            <h2 id="cameraNameTitle"></h2>
-            <h3 id="cameraIdTitle"></h3>
-            <ul id="uploadsList"></ul>
-        </div>
+<!-- Modal for editing pin -->
+<div id="editPinModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditPinModal()">&times;</span>
+        <h2>Edit Pin</h2>
+        <input type="text" id="editPinName" placeholder="Enter new name" class="input"/>
+        <div class="spacer"></div>
+        <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" class="input"/>
+        <div class="spacer"></div>
+        <button onclick="updatePin()" class="btn" style="color: white;">Save Changes</button>
     </div>
+</div>
 
-    <!-- Modal for editing pin -->
-    <div id="editPinModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditPinModal()">&times;</span>
-            <h2>Edit Pin</h2>
-            <input type="text" id="editPinName" placeholder="Enter new name" class="input" />
-            <div class="spacer"></div>
-            <input type="text" id="editPinCameraId" placeholder="Enter new camera ID" class="input" />
-            <div class="spacer"></div>
-            <button onclick="updatePin()" class="btn" style="color: white;">Save Changes</button>
-        </div>
+<!-- Modal for viewing video -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeVideoModal()">&times;</span>
+        <video id="videoPlayer" width="100%" controls>
+            <source id="videoSource" src="" type="">
+            Your browser does not support the video tag.
+        </video>
     </div>
+</div>
 
-    <!-- Modal for viewing video -->
-    <div id="videoModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeVideoModal()">&times;</span>
-            <video id="videoPlayer" width="100%" controls>
-                <source id="videoSource" src="" type="">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-    </div>
-
-    <!-- Modal for editing upload -->
+<!-- Modal for editing upload -->
 <div id="editUploadModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeEditUploadModal()">&times;</span>
         <h2>Wrong info? Correct it here</h2>
         <form id="editUploadForm">
             <label for="editCameraId" class="label">Camera ID:</label>
-            <input type="text" id="editCameraId" class="input" />
+            <input type="text" id="editCameraId" class="input"/>
             <div class="spacer"></div>
             <label for="editAnimal" class="label">Animal:</label>
-            <input type="text" id="editAnimal" class="input" />
+            <input type="text" id="editAnimal" class="input"/>
             <div class="spacer"></div>
             <label for="editDate" class="label">Date:</label>
-            <input type="text" id="editDate" class="input" />
+            <input type="text" id="editDate" class="input"/>
             <div class="spacer"></div>
             <label for="editTime" class="label">Time:</label>
-            <input type="text" id="editTime" class="input" />
+            <input type="text" id="editTime" class="input"/>
             <div class="spacer"></div>
             <button type="button" onclick="updateUpload()" class="btn">Save Changes</button>
         </form>
     </div>
 </div>
 
+<script>
+    const API_URL = 'http://localhost:5001/api';
+    let editingPinId;
+    let editingUploadFilepath;
 
-    <script>
-        document.getElementById('editProfileForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the form from submitting in the traditional way
+document.getElementById('editProfileForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the form from submitting in the traditional way
 
-            var formData = new FormData(this);
-            fetch('/update_profile', {
-                method: 'POST',
-                body: formData
-            }).then(response => response.json())
+        var formData = new FormData(this);
+        formData.append('current_username', '{{ user.username }}'); // Add current username to the form data
+
+        fetch('/update_profile', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json())
             .then(data => {
+                console.log("Profile update response:", data);
                 if (data.status === 'success') {
                     document.getElementById('editProfile').style.display = 'none';
-                    document.getElementById('displayedUsername').textContent = 'Hello, ' + data.username;
-                    document.getElementById('profilePicture').src = data.profile_picture_url;
+                    document.getElementById('displayedUsername').textContent = 'Hello, ' + data.user.username;
+                    document.getElementById('profilePicture').src = data.user.profile_picture_url;
                     alert('Profile updated successfully');
                 } else {
                     alert('Error updating profile: ' + data.message);
                 }
             }).catch(error => {
-                console.error('Error:', error);
-            });
+            console.error('Error:', error);
         });
+    });
 
-        document.getElementById('changePasswordForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the form from submitting in the traditional way
+document.getElementById('changePasswordForm').addEventListener('submit', function (event) {
+    event.preventDefault(); // Prevent the form from submitting in the traditional way
 
-            var formData = new FormData(this);
-            fetch('/change_password', {
-                method: 'POST',
-                body: formData
-            }).then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('changePassword').style.display = 'none';
-                    alert('Password changed successfully');
-                } else {
-                    alert('Error changing password: ' + data.message);
-                }
-            }).catch(error => {
-                console.error('Error:', error);
-            });
-        });
+    var formData = new FormData(this);
+    const current_password = formData.get('current_password');
+    const new_password = formData.get('new_password');
+    const confirm_password = formData.get('confirm_password');
 
-        function toggleEditProfile() {
-            var editProfileDiv = document.getElementById('editProfile');
-            var changePasswordDiv = document.getElementById('changePassword');
-            if (editProfileDiv.style.display === 'none' || editProfileDiv.style.display === '') {
-                editProfileDiv.style.display = 'block';
-                changePasswordDiv.style.display = 'none';
+    console.log("Changing password with data:", {current_password, new_password, confirm_password});
+
+    if (new_password !== confirm_password) {
+        alert('New password and confirm password do not match');
+        return;
+    }
+
+    fetch('/change_password', {
+        method: 'POST',
+        body: JSON.stringify({current_password, new_password, confirm_password}),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then(response => response.json())
+        .then(data => {
+            console.log("Change password response:", data);
+            if (data.status === 'success') {
+                document.getElementById('changePassword').style.display = 'none';
+                alert('Password changed successfully');
             } else {
-                editProfileDiv.style.display = 'none';
+                alert('Error changing password: ' + data.message);
             }
-        }
+        }).catch(error => {
+        console.error('Error:', error);
+    });
+});
 
-        function toggleChangePassword() {
-            var changePasswordDiv = document.getElementById('changePassword');
-            var editProfileDiv = document.getElementById('editProfile');
-            if (changePasswordDiv.style.display === 'none' || changePasswordDiv.style.display === '') {
-                changePasswordDiv.style.display = 'block';
-                editProfileDiv.style.display = 'none';
+document.getElementById('logoutForm').addEventListener('submit', function (event) {
+    event.preventDefault(); // Prevent the form from submitting in the traditional way
+
+    console.log("Logging out");
+
+    fetch('/logout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then(response => response.json())
+        .then(data => {
+            console.log("Logout response:", data);
+            if (data.status === 'success') {
+                window.location.href = '/login';
             } else {
-                changePasswordDiv.style.display = 'none';
+                alert('Error logging out: ' + data.message);
             }
-        }
+        }).catch(error => {
+        console.error('Error:', error);
+    });
+});
 
-        function toggleUploadHistory() {
-            var fullUploads = document.getElementById('full-uploads');
-            var showMore = document.getElementById('show-more');
-            if (fullUploads.style.display === 'none') {
-                fullUploads.style.display = 'block';
-                showMore.innerText = 'Show Less';
-            } else {
-                fullUploads.style.display = 'none';
-                showMore.innerText = 'Show More';
-            }
-        }
-
-        function viewActivity(cameraId, cameraName) {
-            fetch(`/get_uploads_by_camera/${cameraId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const uploadsList = document.getElementById('uploadsList');
-                        const cameraNameTitle = document.getElementById('cameraNameTitle');
-                        const cameraIdTitle = document.getElementById('cameraIdTitle');
-                        uploadsList.innerHTML = '';
-                        cameraNameTitle.textContent = cameraName;
-                        cameraIdTitle.textContent = `Camera ID: ${cameraId}`;
-                        data.uploads.forEach(upload => {
-                            const li = document.createElement('li');
-                            li.textContent = `File: ${upload.filepath} - Duration: ${upload.duration}s - Animal: ${upload.animal} - Pulled Data: ${upload.pulled_data}`;
-                            uploadsList.appendChild(li);
-                        });
-                        document.getElementById('uploadsModal').style.display = 'block';
-                    } else {
-                        console.error(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching uploads:', error);
-                });
-        }
-
-        function openEditPinModal(cameraId, cameraName) {
-            document.getElementById('editPinName').value = cameraName;
-            document.getElementById('editPinCameraId').value = cameraId;
-            editingPinId = cameraId;
-            document.getElementById('editPinModal').style.display = 'block';
-        }
-
-        function closeUploadsModal() {
-            document.getElementById('uploadsModal').style.display = 'none';
-        }
-
-        function closeEditPinModal() {
-            document.getElementById('editPinModal').style.display = 'none';
-        }
-
-        function closeVideoModal() {
-            document.getElementById('videoModal').style.display = 'none';
-            var video = document.getElementById('videoPlayer');
-            video.pause();
-            video.currentTime = 0;
-        }
-
-        function deletePin(cameraId) {
-            fetch(`/delete_pin/${cameraId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload(); // Refresh the page after deletion
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting pin:', error);
-            });
-        }
-
-        function deleteUpload(filepath, elementId) {
-            fetch(`/delete_upload`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ filepath: filepath })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById(elementId).remove(); // Remove the upload item from the DOM
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting upload:', error);
-            });
-        }
-
-        function viewVideo(filepath) {
-            console.log('Button clicked, opening video modal for:', filepath);
-            var videoPlayer = document.getElementById('videoPlayer');
-            var videoSource = document.getElementById('videoSource');
-
-            // Clear existing source
-            videoSource.src = '';
-
-            // Determine the correct source based on file extension
-            if (filepath.toLowerCase().endsWith('.mp4') || filepath.toLowerCase().endsWith('.mov')) {
-                videoSource.src = `/uploads/${filepath}`;
-                videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
-            } else {
-                console.error('Unsupported video format');
-                return;
-            }
-
-            videoPlayer.load();
-            document.getElementById('videoModal').style.display = 'block';
-            console.log('Video source set to:', videoSource.src); // Debug log
-        }
-
-        function updatePin() {
-            const newName = document.getElementById('editPinName').value;
-            const newCameraId = document.getElementById('editPinCameraId').value;
-
-            if (!newName || !newCameraId) {
-                alert('Please enter both a new name and camera ID');
-                return;
-            }
-
-            const updatedPin = { name: newName, camera_id: newCameraId };
-
-            fetch(`/update_pin/${editingPinId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedPin)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    closeEditPinModal();
-                    window.location.reload(); // Refresh the page after updating
-                } else {
-                    console.error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error updating pin:', error);
-            });
-        }
-        // Open edit upload modal
-function openEditUploadModal(filepath, cameraId, animal, date, time) {
-    document.getElementById('editCameraId').value = cameraId;
-    document.getElementById('editAnimal').value = animal;
-    document.getElementById('editDate').value = date;
-    document.getElementById('editTime').value = time;
-    editingUploadFilepath = filepath;
-    document.getElementById('editUploadModal').style.display = 'block';
+function toggleEditProfile() {
+    var editProfileDiv = document.getElementById('editProfile');
+    var changePasswordDiv = document.getElementById('changePassword');
+    if (editProfileDiv.style.display === 'none' || editProfileDiv.style.display === '') {
+        editProfileDiv.style.display = 'block';
+        changePasswordDiv.style.display = 'none';
+    } else {
+        editProfileDiv.style.display = 'none';
+    }
 }
 
-// Close edit upload modal
-function closeEditUploadModal() {
-    document.getElementById('editUploadModal').style.display = 'none';
+function toggleChangePassword() {
+    var changePasswordDiv = document.getElementById('changePassword');
+    var editProfileDiv = document.getElementById('editProfile');
+    if (changePasswordDiv.style.display === 'none' || changePasswordDiv.style.display === '') {
+        changePasswordDiv.style.display = 'block';
+        editProfileDiv.style.display = 'none';
+    } else {
+        changePasswordDiv.style.display = 'none';
+    }
 }
 
-// Update upload details
+
+function viewActivity(cameraId, cameraName) {
+    fetch(`/get_uploads_by_camera/${cameraId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const uploadsList = document.getElementById('uploadsList');
+            const cameraNameTitle = document.getElementById('cameraNameTitle');
+            const cameraIdTitle = document.getElementById('cameraIdTitle');
+            uploadsList.innerHTML = '';
+            cameraNameTitle.textContent = cameraName;
+            cameraIdTitle.textContent = `Camera ID: ${cameraId}`;
+            data.uploads.forEach(upload => {
+                const li = document.createElement('li');
+                const animalIcon = upload.animal.toLowerCase() + '_white.png';
+                li.innerHTML = `
+                    <div class="upload-item">
+                        <div class="upload-details">
+                            <div>File: ${upload.filepath}</div>
+                            <div>Duration: ${parseInt(upload.duration)}s</div>
+                            <div>Camera ID: ${upload.camera_id}</div>
+                            <div>Animal: ${upload.animal}</div>
+                            <div>Date: ${upload.date}</div>
+                            <div>Time: ${upload.time}</div>
+                        </div>
+                        <img src="/static/${animalIcon}" alt="${upload.animal}" class="animal-icon">
+                    </div>
+                    <div class="btn-container">
+                        <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
+                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                        <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}', '${cameraId}')">Delete</button>
+                    </div>`;
+                uploadsList.appendChild(li);
+            });
+            document.getElementById('uploadsModal').style.display = 'block';
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching uploads:', error);
+    });
+}
+
+function openEditPinModal(cameraId, cameraName, latitude, longitude) {
+    console.log(`Opening edit pin modal for cameraId: ${cameraId}, cameraName: ${cameraName}`);
+    document.getElementById('editPinName').value = cameraName;
+    document.getElementById('editPinCameraId').value = cameraId;
+    editingPinId = cameraId;
+    document.getElementById('editPinModal').style.display = 'block';
+}
+
+function closeUploadsModal() {
+    document.getElementById('uploadsModal').style.display = 'none';
+}
+
+function closeEditPinModal() {
+    document.getElementById('editPinModal').style.display = 'none';
+}
+
+function closeVideoModal() {
+    document.getElementById('videoModal').style.display = 'none';
+    var video = document.getElementById('videoPlayer');
+    video.pause();
+    video.currentTime = 0;
+}
+
+function viewVideo(filepath) {
+    const videoPlayer = document.getElementById('videoPlayer');
+    const videoSource = document.getElementById('videoSource');
+
+    videoSource.src = `/uploads/${filepath}`;
+    videoPlayer.load();
+    document.getElementById('videoModal').style.display = 'block';
+}
+
+function deleteUpload(filepath, cameraId) {
+    fetch('/delete_upload', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filepath })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Remove the upload item from the modal immediately
+            const uploadItems = document.querySelectorAll(`#uploadsList li`);
+            uploadItems.forEach(item => {
+                if (item.querySelector('.upload-details').textContent.includes(filepath)) {
+                    item.remove();
+                }
+            });
+
+            // Remove the upload item from the recent uploads list
+            const recentUploadItem = document.getElementById(`upload-${filepath.replace('/', '-')}`);
+            if (recentUploadItem) {
+                recentUploadItem.remove();
+            }
+
+        } else {
+            console.error(data.message);
+            alert('Error deleting upload: ' + data.message); // Notify user of error
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting upload:', error);
+        alert('Error deleting upload: ' + error); // Notify user of error
+    });
+}
+
 function updateUpload() {
     const newCameraId = document.getElementById('editCameraId').value;
     const newAnimal = document.getElementById('editAnimal').value;
@@ -741,7 +753,7 @@ function updateUpload() {
         time: newTime
     };
 
-    fetch(`/update_upload`, {
+    fetch('/update_upload', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
@@ -752,7 +764,7 @@ function updateUpload() {
     .then(data => {
         if (data.status === 'success') {
             closeEditUploadModal();
-            window.location.reload(); // Refresh the page after updating
+            updateUploadList(updatedUpload);
         } else {
             console.error(data.message);
         }
@@ -762,6 +774,131 @@ function updateUpload() {
     });
 }
 
-    </script>
+function updateUploadList(updatedUpload) {
+    const uploadItems = document.querySelectorAll(`#uploadsList li`);
+    uploadItems.forEach(item => {
+        if (item.querySelector('.upload-details').textContent.includes(updatedUpload.filepath)) {
+            item.querySelector('.upload-details').innerHTML = `
+                <div>File: ${updatedUpload.filepath}</div>
+                <div>Duration: ${updatedUpload.duration}s</div>
+                <div>Camera ID: ${updatedUpload.camera_id}</div>
+                <div>Animal: ${updatedUpload.animal}</div>
+                <div>Date: ${updatedUpload.date}</div>
+                <div>Time: ${updatedUpload.time}</div>
+            `;
+            const uploadImage = item.querySelector('img');
+            uploadImage.src = `/static/${updatedUpload.animal.toLowerCase()}.png`;
+            uploadImage.alt = updatedUpload.animal;
+        }
+    });
+
+    // Update recent uploads list
+    const recentUploadItem = document.getElementById(`upload-${updatedUpload.filepath.replace('/', '-')}`);
+    if (recentUploadItem) {
+        recentUploadItem.querySelector('.upload-details').innerHTML = `
+            <div>File: ${updatedUpload.filepath}</div>
+            <div>Duration: ${updatedUpload.duration}s</div>
+            <div>Camera ID: ${updatedUpload.camera_id}</div>
+            <div>Animal: ${updatedUpload.animal}</div>
+            <div>Date: ${updatedUpload.date}</div>
+            <div>Time: ${updatedUpload.time}</div>
+        `;
+        const recentUploadImage = recentUploadItem.querySelector('img');
+        recentUploadImage.src = `/static/${updatedUpload.animal.toLowerCase()}.png`;
+        recentUploadImage.alt = updatedUpload.animal;
+    }
+}
+
+function openEditUploadModal(filepath, cameraId, animal, date, time) {
+    document.getElementById('editCameraId').value = cameraId;
+    document.getElementById('editAnimal').value = animal;
+    document.getElementById('editDate').value = date;
+    document.getElementById('editTime').value = time;
+    editingUploadFilepath = filepath;
+    document.getElementById('editUploadModal').style.display = 'block';
+}
+
+function closeEditUploadModal() {
+    document.getElementById('editUploadModal').style.display = 'none';
+}
+
+function updatePin() {
+    const newName = document.getElementById('editPinName').value;
+    const newCameraId = document.getElementById('editPinCameraId').value;
+
+    if (!newName || !newCameraId) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const updatedPin = {
+        name: newName,
+        new_camera_id: newCameraId,  // Updated key to new_camera_id
+        username: '{{ user.username }}'
+    };
+
+    fetch(`/update_pin/${editingPinId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedPin)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeEditPinModal();
+            updatePinList(updatedPin);
+        } else {
+            console.error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating pin:', error);
+    });
+}
+
+function updatePinList(updatedPin) {
+    const pinItems = document.querySelectorAll('#camera-pins-list li');
+    pinItems.forEach(item => {
+        if (item.querySelector('span').textContent.includes(editingPinId)) {
+            item.querySelector('span').textContent = `${updatedPin.name} (ID: ${updatedPin.new_camera_id})`;
+        }
+    });
+}
+
+function deletePin(cameraId) {
+    console.log("Deleting pin with cameraId:", cameraId);
+    fetch(`/delete_pin/${cameraId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: '{{ user.username }}' })
+    })
+    .then(response => {
+        console.log("Received response:", response);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Received data:", data);
+        if (data.status === 'success') {
+            // Remove the pin item from the DOM immediately
+            const pinItem = document.querySelector(`li[data-camera-id="${cameraId}"]`);
+            if (pinItem) {
+                pinItem.remove();
+            }
+        } else {
+            console.error("Error deleting pin:", data.message);
+            alert('Error deleting pin: ' + data.message); // Notify user of error
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting pin:', error);
+        alert('Error deleting pin: ' + error); // Notify user of error
+    });
+}
+
+</script>
 </body>
 </html>
