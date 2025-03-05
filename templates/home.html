@@ -610,7 +610,6 @@
                     <div style="display: flex; align-items: center;">
                         <div>
                             <div>File: ${upload.filepath}</div>
-                            <div>Duration: ${parseInt(upload.duration)}s</div>
                             <div>Camera ID: ${upload.camera_id}</div>
                             <div>Animal: ${upload.animal}</div>
                             <div>Date: ${upload.date}</div>
@@ -622,7 +621,7 @@
                     </div>
                     <div class="btn-container">
                         <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
-                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View</button>
                         <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}')">Delete</button>
                     </div>`;
                             uploadsList.appendChild(li);
@@ -924,7 +923,7 @@ function updateUploadInList(filepath, cameraId, animal, date, time) {
                 </div>
                 <div class="btn-container">
                     <button class="btn" onclick="openEditUploadModal('${filepath}', '${cameraId}', '${animal}', '${date}', '${time}')">Edit</button>
-                    <button class="btn" onclick="viewVideo('${filepath}')">View Video</button>
+                    <button class="btn" onclick="viewVideo('${filepath}')">View</button>
                     <button class="btn btn-delete" onclick="deleteUpload('${filepath}')">Delete</button>
                 </div>`;
         }

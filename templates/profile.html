@@ -410,32 +410,32 @@
     </div>
 
     <div class="upload-history">
-        <h3>Upload History</h3>
-        {% if user.uploads %}
-            <ul id="recent-uploads">
-                {% for upload in user.uploads | reverse %}
-                    <li class="upload-item" id="upload-{{ upload.filepath | replace('/', '-') }}">
-                        <div class="upload-details">
-                            <span>File: {{ upload.filepath }}</span>
-                            <span>Duration: {{ upload.duration | int }}s</span>
-                            <span>Camera ID: {{ upload.camera_id }}</span>
-                            <span>Animal: {{ upload.animal }}</span>
-                            <span>Date: {{ upload.date }}</span>
-                            <span>Time: {{ upload.time }}</span>
-                        </div>
-                        <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
-                        <div class="upload-actions">
-                            <button class="round-btn" onclick="viewVideo('{{ upload.filepath }}')">View Video</button>
-                            <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
-                            <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ upload.filepath | replace('/', '-') }}')">Delete</button>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No uploads available.</p>
-        {% endif %}
-    </div>
+    <h3>Upload History</h3>
+    {% if user.uploads %}
+        <ul id="recent-uploads">
+            {% for upload in user.uploads | reverse %}
+                <li class="upload-item" id="upload-{{ upload.filepath | replace('/', '-') }}">
+                    <div class="upload-details">
+                        <span>File: {{ upload.filepath }}</span>
+                        <span>Camera ID: {{ upload.camera_id }}</span>
+                        <span>Animal: {{ upload.animal }}</span>
+                        <span>Date: {{ upload.date }}</span>
+                        <span>Time: {{ upload.time }}</span>
+                    </div>
+                    <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
+                    <div class="upload-actions">
+                        <button class="round-btn" onclick="viewFile('{{ upload.filepath }}')">View</button>
+                        <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
+                        <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ upload.filepath | replace('/', '-') }}')">Delete</button>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No uploads available.</p>
+    {% endif %}
+</div>
+
 </div>
 
 <div class="bottom-bar">
@@ -473,16 +473,14 @@
     </div>
 </div>
 
-<!-- Modal for viewing video -->
-<div id="videoModal" class="modal">
+<!-- Modal for viewing image -->
+<div id="imageModal" class="modal">
     <div class="modal-content">
-        <span class="close" onclick="closeVideoModal()">&times;</span>
-        <video id="videoPlayer" width="100%" controls>
-            <source id="videoSource" src="" type="">
-            Your browser does not support the video tag.
-        </video>
+        <span class="close" onclick="closeImageModal()">&times;</span>
+        <img id="imageView" width="100%" alt="Uploaded Image">
     </div>
 </div>
+
 
 <!-- Modal for editing upload -->
 <div id="editUploadModal" class="modal">
@@ -641,7 +639,6 @@ function viewActivity(cameraId, cameraName) {
                     <div class="upload-item">
                         <div class="upload-details">
                             <div>File: ${upload.filepath}</div>
-                            <div>Duration: ${parseInt(upload.duration)}s</div>
                             <div>Camera ID: ${upload.camera_id}</div>
                             <div>Animal: ${upload.animal}</div>
                             <div>Date: ${upload.date}</div>
@@ -651,7 +648,7 @@ function viewActivity(cameraId, cameraName) {
                     </div>
                     <div class="btn-container">
                         <button class="btn" onclick="openEditUploadModal('${upload.filepath}', '${upload.camera_id}', '${upload.animal}', '${upload.date}', '${upload.time}')">Edit</button>
-                        <button class="btn" onclick="viewVideo('${upload.filepath}')">View Video</button>
+                        <button class="btn" onclick="viewFile('${upload.filepath}')">View</button>
                         <button class="btn btn-delete" onclick="deleteUpload('${upload.filepath}', '${cameraId}')">Delete</button>
                     </div>`;
                 uploadsList.appendChild(li);
@@ -689,14 +686,25 @@ function closeVideoModal() {
     video.currentTime = 0;
 }
 
-function viewVideo(filepath) {
-    const videoPlayer = document.getElementById('videoPlayer');
-    const videoSource = document.getElementById('videoSource');
-
-    videoSource.src = `/uploads/${filepath}`;
-    videoPlayer.load();
-    document.getElementById('videoModal').style.display = 'block';
+function viewFile(filepath) {
+    console.log("Filepath:", filepath);  // Add this line to verify filepath
+    const isImage = /\.(png|jpe?g)$/i.test(filepath);
+    if (isImage) {
+        document.getElementById('imageView').src = `/uploads/${filepath}`;
+        document.getElementById('imageModal').style.display = 'block';
+    } else {
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoSource = document.getElementById('videoSource');
+        videoSource.src = `/uploads/${filepath}`;
+        videoPlayer.load();
+        document.getElementById('videoModal').style.display = 'block';
+    }
 }
+
+function closeImageModal() {
+    document.getElementById('imageModal').style.display = 'none';
+}
+
 
 function deleteUpload(filepath, cameraId) {
     fetch('/delete_upload', {
@@ -780,7 +788,6 @@ function updateUploadList(updatedUpload) {
         if (item.querySelector('.upload-details').textContent.includes(updatedUpload.filepath)) {
             item.querySelector('.upload-details').innerHTML = `
                 <div>File: ${updatedUpload.filepath}</div>
-                <div>Duration: ${updatedUpload.duration}s</div>
                 <div>Camera ID: ${updatedUpload.camera_id}</div>
                 <div>Animal: ${updatedUpload.animal}</div>
                 <div>Date: ${updatedUpload.date}</div>
@@ -797,7 +804,6 @@ function updateUploadList(updatedUpload) {
     if (recentUploadItem) {
         recentUploadItem.querySelector('.upload-details').innerHTML = `
             <div>File: ${updatedUpload.filepath}</div>
-            <div>Duration: ${updatedUpload.duration}s</div>
             <div>Camera ID: ${updatedUpload.camera_id}</div>
             <div>Animal: ${updatedUpload.animal}</div>
             <div>Date: ${updatedUpload.date}</div>

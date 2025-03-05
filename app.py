@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory, send_file
+import requests
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
-from wtforms import FileField, SubmitField
+from wtforms import FileField, SubmitField, MultipleFileField
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileAllowed, FileRequired
 import os
@@ -11,10 +12,6 @@ from torchvision import models, transforms
 from PIL import Image
 import cv2
 import pytesseract
-from moviepy.editor import VideoFileClip
-import io
-import requests
-import matplotlib.pyplot as plt
 from pymongo import MongoClient
 
 app = Flask(__name__)
@@ -39,13 +36,29 @@ model.eval()
 class_names = ['Bear', 'Boar', 'Bobcat', 'Deer', 'Turkey', 'Unidentifiable']
 
 class UploadForm(FlaskForm):
-    file = FileField('Video File', validators=[FileRequired(), FileAllowed(['mp4', 'avi', 'mov'], 'Videos only!')])
+    files = MultipleFileField('Video or Image Files', validators=[
+        FileRequired(),
+        FileAllowed(['mp4', 'avi', 'mov', 'png', 'jpg', 'jpeg'], 'Videos and images only!')
+    ])
     submit = SubmitField('Upload')
+
 
 # Ensure the uploads directory exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
+
+def is_image_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
+
+
+def is_video_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'mp4', 'avi', 'mov'}
+
+def preprocess_image(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    return thresh
 
 def recognize_animal(image_path):
     transform = transforms.Compose([
@@ -61,82 +74,137 @@ def recognize_animal(image_path):
         _, predicted = torch.max(outputs, 1)
     return class_names[predicted.item()]
 
-def preprocess_image(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    return thresh
 
 def apply_mask(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, alpha = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
     b, g, r = cv2.split(img)
     rgba = [b, g, r, alpha]
-    dst = cv2.merge(rgba, 4)
-    return dst
+    return cv2.merge(rgba, 4)
+
 
 def extract_metadata(filepath):
-    cap = cv2.VideoCapture(filepath)
-    if not cap.isOpened():
-        raise ValueError(f"Error: Cannot open video {filepath}")
-
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
-    duration = frame_count / frame_rate
-
+    """Extract metadata like animal type and camera details from a single frame in a video or an image."""
     camera_id = "Unknown"
     animal = "Unidentifiable"
     pulled_data = ""
     date = "Unknown"
     time = "Unknown"
 
-    success, frame = cap.read()
-    frame_number = 0
+    img = cv2.imread(filepath)
+    height, width, _ = img.shape
 
-    if success:
-        img = frame
-        height, width, _ = img.shape
-        roi_height = height // 10
-        camera_id_width = width // 6
-        camera_id_img = img[height - roi_height:height, width - camera_id_width:width]
+    # Camera ID extraction
+    camera_id_img = img[height - height // 10:height, width - width // 6:width]
+    masked_camera_id_img = apply_mask(camera_id_img)
+    custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789CFPMA:/.°'
+    camera_id_text = pytesseract.image_to_string(masked_camera_id_img, config=custom_config).strip()
 
-        date_time_height = height // 12
-        date_time_width = width // 4
-        date_img = img[height - date_time_height:height, width // 3:width // 3 + date_time_width - 10]
-        time_img = img[height - date_time_height:height, width // 3 + date_time_width - 30:width - 20]
+    for line in camera_id_text.split("\n"):
+        if len(line.strip()) == 4 and line.strip().isdigit():
+            camera_id = line.strip()
+            break
 
-        masked_camera_id_img = apply_mask(camera_id_img)
-        preprocessed_camera_id_img = preprocess_image(masked_camera_id_img)
-        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789CFPMA:/.°'
-        camera_id_text = pytesseract.image_to_string(preprocessed_camera_id_img, config=custom_config).strip()
+    # Date and Time extraction
+    date_time_height = height // 12
+    date_time_width = width // 4
+    date_img = img[height - date_time_height:height, width // 3:width // 3 + date_time_width - 10]
+    time_img = img[height - date_time_height:height, width // 3 + date_time_width - 30:width - 20]
 
-        masked_date_img = apply_mask(date_img)
-        preprocessed_date_img = preprocess_image(masked_date_img)
-        date_text = pytesseract.image_to_string(preprocessed_date_img, config=custom_config).strip()
+    # Preprocess for OCR
+    masked_date_img = apply_mask(date_img)
+    preprocessed_date_img = preprocess_image(masked_date_img)
+    date_text = pytesseract.image_to_string(preprocessed_date_img, config=custom_config).strip()
 
-        masked_time_img = apply_mask(time_img)
-        preprocessed_time_img = preprocess_image(masked_time_img)
-        time_text = pytesseract.image_to_string(preprocessed_time_img, config=custom_config).strip()
+    masked_time_img = apply_mask(time_img)
+    preprocessed_time_img = preprocess_image(masked_time_img)
+    time_text = pytesseract.image_to_string(preprocessed_time_img, config=custom_config).strip()
 
-        for line in camera_id_text.split("\n"):
-            if len(line.strip()) == 4 and line.strip().isdigit():
-                camera_id = line.strip()
-                break
+    if "/" in date_text:
+        date = date_text.split()[0]
+    if ":" in time_text:
+        time = time_text.split()[0]
 
-        if "/" in date_text:
-            date = date_text.split()[0]
-        if ":" in time_text:
-            time = time_text.split()[0]
+    # Detect animal
+    detected_animal = recognize_animal(filepath)
+    if detected_animal != "Unidentifiable":
+        animal = detected_animal
 
-        temp_filepath = f'temp_frame_{frame_number}.jpg'
-        cv2.imwrite(temp_filepath, frame)
-        detected_animal = recognize_animal(temp_filepath)
-        if detected_animal != "Unidentifiable":
-            animal = detected_animal
+    return camera_id, animal, pulled_data, date, time
 
-        os.remove(temp_filepath)
 
-    cap.release()
-    return duration, camera_id, animal, pulled_data, date, time
+def process_image(filepath, filename):
+    try:
+        camera_id, animal, pulled_data, date, time = extract_metadata(filepath)
+        upload_data = {
+            "filepath": filename,
+            "camera_id": camera_id,
+            "animal": animal,
+            "pulled_data": pulled_data,
+            "date": date,
+            "time": time
+        }
+        return save_upload_to_db(upload_data)
+    except Exception as e:
+        print(f'Error in process_image: {e}')
+        return {'status': 'error', 'message': str(e)}
+
+
+def process_video(filepath, filename):
+    try:
+        # Open video file
+        cap = cv2.VideoCapture(filepath)
+
+        # Move to the 10th frame
+        frame_count = 0
+        target_frame = 10  # The frame we want to capture
+
+        while frame_count < target_frame:
+            success, frame = cap.read()
+            if not success:
+                return {'status': 'error', 'message': 'Could not read the 10th frame'}
+            frame_count += 1
+
+        # Define the image file path to save the frame
+        image_filename = f"{os.path.splitext(filename)[0]}_frame.jpg"
+        image_filepath = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+
+        # Save the 10th frame as an image
+        cv2.imwrite(image_filepath, frame)
+
+        # Extract metadata from the saved image
+        camera_id, animal, pulled_data, date, time = extract_metadata(image_filepath)
+        upload_data = {
+            "filepath": image_filename,
+            "camera_id": camera_id,
+            "animal": animal,
+            "pulled_data": pulled_data,
+            "date": date,
+            "time": time
+        }
+
+        # Clean up: Release the video capture and delete the original video file
+        cap.release()
+        os.remove(filepath)  # Remove the video file
+
+        # Save the processed image data to the database
+        return save_upload_to_db(upload_data)
+    except Exception as e:
+        print(f'Error in process_video: {e}')
+        return {'status': 'error', 'message': str(e)}
+
+
+def save_upload_to_db(upload_data):
+    username = session.get('username')
+    if username:
+        db.users.update_one(
+            {"username": username},
+            {"$push": {"uploads": upload_data}}
+        )
+        return {'status': 'success', 'message': 'Upload successful'}
+    else:
+        return {'status': 'error', 'message': 'User not logged in'}
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -153,88 +221,40 @@ def upload():
         return redirect(url_for('login'))
 
     if form.validate_on_submit():
-        try:
-            file = form.file.data
+        messages = []  # Collect messages for each file
+        for file in form.files.data:  # Access form.files instead of form.file
             filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
+            # Check if the file already exists in the database
             existing_file = db.users.find_one({"uploads.filepath": filename})
             if existing_file:
-                flash('File already exists. Please upload a different file.')
-                return redirect(url_for('upload'))
+                messages.append(f'File {filename} already exists. Skipping upload for this file.')
+                continue  # Skip existing files
 
+            # Save and process each file
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-            result = process_video(filepath, filename)
-            flash(result['message'])
-        except Exception as e:
-            flash(f'Error during file upload: {e}')
+
+            # Determine file type and process accordingly
+            if is_image_file(filename):
+                result = process_image(filepath, filename)
+            elif is_video_file(filename):
+                result = process_video(filepath, filename)
+            else:
+                messages.append(f'Unsupported file format: {filename}. Skipping this file.')
+                continue  # Skip unsupported formats
+
+            # Append success or error message
+            messages.append(result['message'])
+
+        # Flash each collected message for display
+        for message in messages:
+            flash(message)
         return redirect(url_for('upload'))
 
     return render_template('upload.html', title='Upload', form=form, user=user)
 
 
-
-
-def process_video(filepath, filename):
-    try:
-        new_filename = filename
-        if not filename.lower().endswith('.mp4'):
-            new_filename = convert_to_mp4(filepath, filename)
-            os.remove(filepath)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
-
-        duration, camera_id, animal, pulled_data, date, time = extract_metadata(filepath)
-        username = session.get('username')
-        if username:
-            user = db.users.find_one({"username": username})
-            if user:
-                upload_data = {
-                    "filepath": new_filename,
-                    "duration": duration,
-                    "camera_id": camera_id,
-                    "animal": animal,
-                    "pulled_data": pulled_data,
-                    "date": date,
-                    "time": time
-                }
-
-                # Check if the file is already uploaded
-                existing_upload = db.users.find_one({"username": username, "uploads.filepath": new_filename})
-                if existing_upload:
-                    return {'status': 'error', 'message': 'File already uploaded'}
-
-                print(f"Adding upload data to user: {username}, data: {upload_data}")
-                db.users.update_one(
-                    {"username": username},
-                    {"$push": {"uploads": upload_data}}
-                )
-
-                data = {
-                    'username': username,
-                    'filepath': new_filename,
-                    'duration': duration,
-                    'camera_id': camera_id,
-                    'animal': animal,
-                    'pulled_data': pulled_data,
-                    'date': date,
-                    'time': time
-                }
-                response = requests.post(f'{API_URL}/users/log-scan', json=data)
-                print(f'API response: {response.json()}')
-                return {'status': 'success', 'message': 'Upload successful'}
-        return {'status': 'error', 'message': 'User not logged in or not found'}
-    except Exception as e:
-        print(f'Error in process_video: {e}')
-        return {'status': 'error', 'message': str(e)}
-
-
-
-def convert_to_mp4(filepath, filename):
-    clip = VideoFileClip(filepath)
-    new_filename = os.path.splitext(filename)[0] + ".mp4"
-    new_filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
-    clip.write_videofile(new_filepath, codec='libx264')
-    return new_filename
 
 @app.route('/')
 def index():
@@ -256,19 +276,33 @@ def signup():
             'name': name,
             'email': email
         }
+        
+        # Add debug logging
+        print(f"Making API call for registration...")
         result = call_api('users/register', 'post', data)
+        print(f"API result: {result}")
+
         if result is None:
+            print("API call returned None")
             flash('An unexpected error occurred. Please try again.')
             return redirect(url_for('signup'))
 
-        flash(result.get('message', 'An unexpected error occurred. Please try again.'))
+        # Check the exact message from the API
+        print(f"Checking message: {result.get('message')}")
+        print(f"Expected message: User {username} registered successfully!")
+        
         if result.get('message') == f'User {username} registered successfully!':
+            print("Registration successful, setting session")
             session['username'] = username
+            print("Redirecting to home")
             return redirect(url_for('home'))
         else:
+            print(f"Registration failed with message: {result.get('message')}")
+            flash(result.get('message', 'An unexpected error occurred. Please try again.'))
             return redirect(url_for('signup'))
 
     return render_template('signup.html', title='Sign Up')
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -435,10 +469,10 @@ def update_profile():
         print('Error during API call:', e)
         return jsonify({'status': 'error', 'message': str(e)})
 
-
-@app.route('/uploads/<filename>')
+@app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 @app.route('/change_password', methods=['POST'])
 def change_password():
@@ -451,28 +485,32 @@ def change_password():
     return jsonify(result)
 
 # Update call_api function if not already updated
-def call_api(endpoint, method='post', data=None):
-    url = f'{API_URL}/{endpoint}'
-    print(f"Calling API: {url} with method: {method} and data: {data}")
-
+def call_api(endpoint, method='get', data=None):
+    api_url = f'http://localhost:5001/api/{endpoint}'
+    print(f"Calling API: {api_url} with method: {method} and data: {data}")
+    
     try:
-        if method == 'get':
-            response = requests.get(url, json=data)
-        elif method == 'post':
-            response = requests.post(url, json=data)
-        elif method == 'put':
-            response = requests.put(url, json=data)
-        elif method == 'delete':
-            response = requests.delete(url, json=data)
-
-        print(f"API call to {url} returned status {response.status_code}")
-        if response.status_code == 200 and response.content:
-            return response.json()
+        if method.lower() == 'get':
+            response = requests.get(api_url)
+        elif method.lower() == 'post':
+            response = requests.post(api_url, json=data)
+        elif method.lower() == 'put':
+            response = requests.put(api_url, json=data)
+        elif method.lower() == 'delete':
+            response = requests.delete(api_url, json=data)
         else:
-            response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling API: {e}")
-        return {'status': 'error', 'message': 'API call failed'}
+            return None
+
+        print(f"API call to {api_url} returned status {response.status_code}")
+        
+        # Handle both 200 and 201 status codes as success
+        if response.status_code in [200, 201]:
+            return response.json()
+        
+        return None
+    except Exception as e:
+        print(f"API call failed with error: {str(e)}")
+        return None
 
 
 @app.route('/update_upload', methods=['PUT'])
@@ -574,6 +612,27 @@ def get_camera_ids():
     # Get camera IDs from gps_pins instead of uploads
     camera_ids = [pin['camera_id'] for pin in user['gps_pins']]
     return jsonify({'status': 'success', 'camera_ids': camera_ids}), 200
+
+@app.route('/get_latest_uploads', methods=['GET'])
+def get_latest_uploads():
+    username = session.get('username')
+    if not username:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+
+    user = db.users.find_one({"username": username})
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'})
+
+    # Convert ObjectId to string in uploads
+    uploads = user.get('uploads', [])
+    for upload in uploads:
+        if '_id' in upload:
+            upload['_id'] = str(upload['_id'])
+
+    return jsonify({
+        'status': 'success',
+        'uploads': uploads
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)

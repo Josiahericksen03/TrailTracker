@@ -1,36 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Trail Tracker</h1>
-    <h2>Sign Up</h2>
-    <form action="{{ url_for('signup') }}" method="post" class="signup-form">
-        <input type="text" name="username" class="input" placeholder="Username" required>
-        <input type="password" name="password" class="input" placeholder="Password" required>
-        <input type="text" name="name" class="input" placeholder="Name" required>
-        <input type="email" name="email" class="input" placeholder="Email" required>
-        <button type="submit" class="btn">Sign Up</button>
-    </form>
-    <a href="{{ url_for('login') }}">Already have an account? Log In</a>
-    <style>
-        .signup-form .input {
-            margin-bottom: 15px; /* Add spacing between input boxes */
-            padding: 10px;
-            width: 100%;
-            box-sizing: border-box;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .signup-form .btn {
-            margin-top: 15px; /* Add spacing above the button */
-            padding: 10px 15px;
-            background-color: #228B22;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .signup-form .btn:hover {
-            background-color: #196619;
-        }
-    </style>
+    <div class="login-container">
+        <h1>Sign Up</h1>
+        <form action="{{ url_for('signup') }}" method="post" class="login-form">
+            <input type="text" name="username" class="input" placeholder="Username" required>
+            <input type="password" name="password" class="input" placeholder="Password" required style="margin-top: 15px;">
+            <input type="text" name="name" class="input" placeholder="Name" required style="margin-top: 15px;">
+            <input type="email" name="email" class="input" placeholder="Email" required style="margin-top: 15px;">
+            <button type="submit" class="btn" style="background-color: #006000; color: white;">Sign Up</button>
+        </form>
+        <a href="{{ url_for('login') }}">Already have an account? Log In</a>
+    </div>
 {% endblock %}
