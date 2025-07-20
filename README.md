@@ -1,332 +1,182 @@
-# TrailTracker
+# Trail Tracker
 
-A web application for managing and analyzing trail camera footage.
+A web application for managing trail camera footage with AI-powered animal detection and GPS-based camera tracking.
 
-## TODO
-- [x] Add pop-ups for incorrect password/username
-- [x] Make cameras show longitude and latitude
-- [x] Display actual photos instead of icons (in profile)
-- [ ] Parse info differently based on camera ID presence
-- [ ] Review all features and verify functionality
-- [ ] Sort by date
-- [ ] Make run over HTTPS instead of HTTP (need domain name)
-- [ ] Get pin of current location working in online version(should work when getting domain name)
+## What It Does
 
+Trail Tracker helps you organize and analyze trail camera data. Upload images and videos from your trail cameras, and the app will automatically extract metadata (camera ID, date, time) and identify animals using AI. You can manage your camera locations on an interactive map, view upload history, and see statistics about your wildlife sightings.
 
-### Mobile Development
-- [ ] Create React Native version
-- [ ] Connect to same Node backend
+## Features
 
-### AI Improvements
-- [ ] Train AI on additional footage
-- [ ] Explore better training methods
-- [ ] Improve detection of other animals
-- [ ] Expand animal detection array
+### 🎯 Core Functionality
+- **AI Animal Detection**: Identifies Bear, Boar, Bobcat, Deer, Turkey, and Unidentifiable animals using a trained ResNet18 model
+- **Metadata Extraction**: Uses OCR to extract camera ID, date, and time from trail camera images
+- **Video Processing**: Extracts the 10th frame from videos for analysis
+- **Camera Management**: Add camera locations with GPS coordinates and manage them on a map
+- **Upload History**: View all your uploads with filtering and editing capabilities
 
-### Security Enhancements
-- [ ] Add more security measures
-- [ ] Implement password requirements
-- [ ] Add email verification 
+### 🗺️ Interactive Map
+- **GPS Location**: Get your current location coordinates
+- **Camera Pins**: See all your camera locations on an interactive map
+- **Map Layers**: Switch between satellite, topographic, street, and humanitarian views
+- **Weather Overlay**: Optional weather data display
 
-#######################################################################################################################
-PROFILE STYLING:
-<style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background: url("{{ url_for('static', filename='background.png') }}") no-repeat center center fixed;
-            background-size: cover;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Prevent scrolling on body */
-        }
+### 📊 Data Analytics
+- **Statistics Dashboard**: View animal sightings by camera or species
+- **Interactive Charts**: Visual charts showing your data
+- **Filtering**: Sort by camera ID or animal type
+- **Data Management**: Edit upload information and delete files
 
-        .container {
-            background-color: rgba(50, 50, 50, 0.8);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 90%; /* Ensure a small margin on the sides */
-            text-align: center;
-            color: white;
-            margin-top: 60px; /* Add margin to avoid overlap with the top bar */
-            margin-bottom: 60px; /* Add margin to avoid overlap with the bottom bar */
-            overflow-y: auto; /* Enable vertical scrolling */
-            position: relative;
-        }
+### 👤 User Management
+- **User Accounts**: Register and login system
+- **Profile Settings**: Update username, profile picture, and password
+- **Session Management**: Stay logged in across browser sessions
+- **Personal Data**: Each user has their own uploads and camera network
 
-        .top-bar, .bottom-bar {
-            position: fixed;
-            left: 0;
-            width: 100%;
-            height: 50px;
-            background-color: #323232;
-            display: flex;
-            align-items: center;
-            justify-content: center; /* Center align the items */
-            z-index: 1000;
-        }
+### 🖼️ Media Management
+- **File Viewer**: Built-in viewer for images and videos
+- **Multiple Uploads**: Upload several files at once
+- **File Organization**: Files are organized by camera and date
+- **Edit Metadata**: Update camera ID, animal type, date, and time for uploads
 
-        .top-bar {
-            top: 0;
-        }
+## Tech Stack
 
-        .bottom-bar {
-            bottom: 0;
-        }
+### Frontend
+- **HTML5/CSS3**: Responsive web design with modern styling
+- **JavaScript (ES6+)**: Interactive client-side functionality
+- **Chart.js**: Data visualization and analytics
+- **Leaflet.js**: Interactive mapping and GPS functionality
 
-        .title {
-            color: white;
-            font-size: 24px;
-            margin: 0;
-            text-align: center;
-            display: flex;
-            justify-content: center; /* Center align the text */
-            align-items: center; /* Center vertically */
-        }
+### Backend
+- **Flask**: Python web framework for API and server-side logic
+- **MongoDB**: NoSQL database for flexible data storage
+- **PyMongo**: MongoDB driver for Python
 
-        .nav-btn {
-            background-color: #323232;
-            color: white;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            text-align: center;
-            margin: 0 40px; /* Add margin for spacing between buttons */
-            border-radius: 50%; /* Make hover shape round */
-        }
+### AI/ML
+- **PyTorch**: Deep learning framework
+- **TorchVision**: Computer vision models and transforms
+- **ResNet18**: Pre-trained neural network for animal classification
+- **OpenCV**: Image and video processing
+- **Tesseract OCR**: Text extraction from images
 
-        .nav-btn:hover {
-            background-color: #444;
-        }
+### Media Processing
+- **FFmpeg**: Video processing and frame extraction
+- **Pillow (PIL)**: Image processing and manipulation
+- **MoviePy**: Video editing and processing
 
-        .nav-btn img {
-            width: 25px;
-            height: 25px;
-        }
+### Development Tools
+- **Flask-WTF**: Form handling and validation
+- **Alembic**: Database migrations
+- **Requests**: HTTP client for API calls
 
-        .profile-pic {
-            border-radius: 50%;
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            display: block;
-            margin: 0 auto 10px;
-        }
+## How to Run Locally
 
-        .upload-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
+### Prerequisites
+- Python 3.8+
+- Node.js 14+
+- MongoDB
+- FFmpeg
+- Tesseract OCR
 
-        .upload-details {
-            flex-grow: 1;
-        }
+### Installation
 
-        .upload-item {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start; /* Ensure content starts from the left */
-            margin-bottom: 20px;
-        }
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Josiahericksen03/TrailTracker
+   cd Trailtracker
+   ```
 
-        .upload-details {
-            flex-grow: 1;
-            margin-right: 10px; /* Add space between text and icon */
-        }
+2. **Set up Python environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-        .animal-icon {
-            width: 50px;
-            height: 50px;
-        }
+3. **Install system dependencies**
+   ```bash
+   # macOS
+   brew install mongodb-community ffmpeg tesseract
+   
+   # Ubuntu/Debian
+   sudo apt-get install mongodb ffmpeg tesseract-ocr
+   
+   # Windows
+   # Download and install MongoDB, FFmpeg, and Tesseract separately
+   ```
 
-        .btn-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
+4. **Start MongoDB**
+   ```bash
+   # macOS
+   brew services start mongodb-community
+   
+   # Ubuntu/Debian
+   sudo systemctl start mongod
+   
+   # Windows
+   # Start MongoDB service from Windows Services
+   ```
 
+5. **Set up the Backend API**
+   ```bash
+   # Navigate to the backend directory (separate repository)
+   cd ../trailtracker-backend
+   npm install
+   node server.js
+   ```
+   *Note: The backend runs on port 5001 and handles user authentication and additional API endpoints.*
 
-        .input, .btn {
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 90%; /* Reduce width for a narrower form */
-            margin: 0 auto;
-            display: block; /* Ensure input and button are block-level and centered */
-        }
+6. **Start the Flask application**
+   ```bash
+   # Return to the main project directory
+   cd ../Trailtracker
+   python app.py
+   ```
 
-        .btn {
-            background-color: #228B22;
-            color: white;
-            cursor: pointer;
-            border: 2px solid white;
-        }
+7. **Access the application**
+   - Open your browser and go to `http://localhost:8080`
+   - Register a new account or log in with existing credentials
+   - Start uploading trail camera footage!
 
-        .btn:hover {
-            background-color: #196619;
-        }
+### Configuration
 
-        .logout-btn {
-            padding: 10px 20px;
-            border: 2px solid white;
-            border-radius: 20px;
-            background-color: #444;
-            color: white;
-            cursor: pointer;
-            margin: 20px auto; /* Centered and spaced from the top */
-            display: inline-block; /* Ensure button is inline-block and centered */
-        }
+The application uses these default settings:
+- **Database**: MongoDB running on localhost:27017
+- **Upload folder**: `uploads/` directory in the project
+- **AI model**: `animal_model.pth` (43MB trained model)
+- **Backend API**: `http://localhost:5001/api`
 
-        .logout-btn:hover {
-            background-color: grey;
-        }
+### File Structure
+```
+Trailtracker/
+├── app.py                 # Main Flask application
+├── requirements.txt       # Python dependencies
+├── animal_model.pth       # Trained AI model (43MB)
+├── templates/            # HTML templates (home, profile, upload, etc.)
+├── static/              # CSS, JS, images, and static assets
+├── uploads/             # Uploaded media files
+├── migrations/          # Database migrations
+├── scripts/            # Utility scripts
+├── TODO.md             # Development notes and tasks
+└── README.md           # This file
+```
 
-        a {
-            display: block;
-            margin-top: 10px;
-            color: #007bff;
-        }
+## Current Status
 
-        a:hover {
-            text-decoration: underline;
-        }
+This is a working application with the following implemented features:
+- ✅ User authentication and profile management
+- ✅ AI-powered animal detection
+- ✅ Interactive map with camera pin management
+- ✅ Upload and processing of images/videos
+- ✅ Data analytics and filtering
+- ✅ Mobile-responsive design
 
-        .camera-pins, .upload-history {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-            color: black;
-            width: calc(100% - 40px);
-            margin: 0 auto 20px; /* Ensure sections are centered and have space between them */
-            max-height: 300px; /* Fixed height for the box */
-            overflow-y: auto; /* Enable scrolling */
-        }
+## Known Issues
 
-        .camera-pins ul, .upload-history ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+- Video processing can be slow for large files
+- Some OCR text extraction may not work perfectly on all camera types
+- Weather overlay requires API key configuration
 
-        .camera-pins li, .upload-history li {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+## Support
 
-        .camera-pins li:last-child, .upload-history li:last-child {
-            border-bottom: none;
-        }
-
-        .btn-delete {
-            background-color: #dc3545;
-        }
-
-        .btn-delete:hover {
-            background-color: #c82333;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: #323232;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-            color: white;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: white;
-        }
-
-        .modal input {
-            width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .modal button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            background-color: #228B22;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .modal button:hover {
-            background-color: #196619;
-        }
-
-        .video-modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .video-container {
-            width: 80%;
-            max-width: 800px;
-        }
-
-        video {
-            width: 100%;
-        }
-
-        .close-video {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            color: white;
-            font-size: 30px;
-            cursor: pointer;
-        }
-</style> 
+For issues or questions, please open an issue in the repository. 
