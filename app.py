@@ -154,22 +154,27 @@ def process_video(filepath, filename):
     try:
         # Open video file
         cap = cv2.VideoCapture(filepath)
-
-        # Move to the 10th frame
-        frame_count = 0
-        target_frame = 10  # The frame we want to capture
-
-        while frame_count < target_frame:
-            success, frame = cap.read()
-            if not success:
-                return {'status': 'error', 'message': 'Could not read the 10th frame'}
-            frame_count += 1
+        
+        # Get total frame count
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Set target frame (10th frame or middle if video is shorter)
+        target_frame = min(10, total_frames // 2)
+        
+        # Jump directly to the target frame
+        cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+        
+        # Read the frame
+        success, frame = cap.read()
+        if not success:
+            cap.release()
+            return {'status': 'error', 'message': 'Could not read the target frame'}
 
         # Define the image file path to save the frame
         image_filename = f"{os.path.splitext(filename)[0]}_frame.jpg"
         image_filepath = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
 
-        # Save the 10th frame as an image
+        # Save the frame as an image
         cv2.imwrite(image_filepath, frame)
 
         # Extract metadata from the saved image
@@ -270,6 +275,10 @@ def signup():
         name = request.form['name']
         email = request.form['email']
 
+        if not all([username, password, name, email]):
+            flash('Please fill in all fields')
+            return redirect(url_for('signup'))
+
         data = {
             'username': username,
             'password': password,
@@ -277,29 +286,23 @@ def signup():
             'email': email
         }
         
-        # Add debug logging
-        print(f"Making API call for registration...")
         result = call_api('users/register', 'post', data)
-        print(f"API result: {result}")
 
         if result is None:
-            print("API call returned None")
-            flash('An unexpected error occurred. Please try again.')
+            flash('Server error. Please try again later.')
             return redirect(url_for('signup'))
 
-        # Check the exact message from the API
-        print(f"Checking message: {result.get('message')}")
-        print(f"Expected message: User {username} registered successfully!")
-        
-        if result.get('message') == f'User {username} registered successfully!':
-            print("Registration successful, setting session")
-            session['username'] = username
-            print("Redirecting to home")
-            return redirect(url_for('home'))
-        else:
-            print(f"Registration failed with message: {result.get('message')}")
-            flash(result.get('message', 'An unexpected error occurred. Please try again.'))
+        if result.get('status') == 'error':
+            if 'username' in result.get('message', '').lower():
+                flash('Username already exists')
+            elif 'email' in result.get('message', '').lower():
+                flash('Email already registered')
+            else:
+                flash(result.get('message', 'Registration failed. Please try again.'))
             return redirect(url_for('signup'))
+
+        session['username'] = username
+        return redirect(url_for('home'))
 
     return render_template('signup.html', title='Sign Up')
 
@@ -311,24 +314,34 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
+        if not username or not password:
+            flash('Please enter both username and password')
+            return redirect(url_for('login'))
+
         data = {
             'username': username,
             'password': password
         }
 
-        # Log the data being sent to the API
-        print(f'Sending login request with data: {data}')
-
         result = call_api('users/login', 'post', data)
+        print(f"Full API Response: {result}")  # Debug print
 
-        # Log the API response
-        print(f'API response: {result}')
+        if result is None:
+            flash('Server error. Please try again later.')
+            return redirect(url_for('login'))
 
-        flash(result['message'])
-        if result['message'] == 'Login successful':
+        # Check for error status first
+        if result.get('status') == 'error':
+            flash(result.get('message', 'Login failed. Please try again.'))
+            return redirect(url_for('login'))
+
+        # If no error status, check message
+        message = result.get('message', '').lower()
+        if message == 'login successful':
             session['username'] = username
             return redirect(url_for('home'))
         else:
+            flash(result.get('message', 'Login failed. Please try again.'))
             return redirect(url_for('login'))
 
     return render_template('login.html', title='Log In')
@@ -364,10 +377,26 @@ def users():
 def save_location():
     data = request.get_json()
     username = session.get('username')
-    if username:
-        result = call_api('users/save_location', 'post', data)
-        return jsonify(result)
-    return jsonify({'status': 'error', 'message': 'User not logged in'})
+    
+    if not username:
+        return jsonify({'status': 'error', 'message': 'User not logged in'})
+        
+    pin_data = {
+        'camera_id': data.get('camera_id'),
+        'name': data.get('name'),
+        'latitude': data.get('latitude'),
+        'longitude': data.get('longitude')
+    }
+
+    try:
+        db.users.update_one(
+            {'username': username},
+            {'$push': {'gps_pins': pin_data}}
+        )
+        return jsonify({'status': 'success', 'message': 'Location saved successfully'})
+    except Exception as e:
+        print(f"Error saving location: {e}")
+        return jsonify({'status': 'error', 'message': str(e)})
 
 @app.route('/save_pin', methods=['POST'])
 def save_pin():
@@ -470,7 +499,9 @@ def update_profile():
         return jsonify({'status': 'error', 'message': str(e)})
 
 @app.route('/uploads/<path:filename>')
-def uploaded_file(filename):
+def uploads(filename):
+    if 'username' not in session:
+        return redirect(url_for('login'))
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
@@ -501,13 +532,11 @@ def call_api(endpoint, method='get', data=None):
         else:
             return None
 
-        print(f"API call to {api_url} returned status {response.status_code}")
+        print(f"API Response Status Code: {response.status_code}")
+        print(f"API Response Content: {response.text}")
         
-        # Handle both 200 and 201 status codes as success
-        if response.status_code in [200, 201]:
-            return response.json()
-        
-        return None
+        # Return response even if not 200/201
+        return response.json()
     except Exception as e:
         print(f"API call failed with error: {str(e)}")
         return None

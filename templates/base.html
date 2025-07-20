@@ -119,6 +119,22 @@
         a:hover {
             text-decoration: underline;
         }
+
+        .flash-message {
+            background-color: rgba(255, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            margin: 10px auto;
+            border-radius: 4px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
     </style>
     {% block styles %}{% endblock %}
 </head>
@@ -126,6 +142,15 @@
     <div class="top-bar">
         <div class="title">Trail Tracker</div>
     </div>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash-message">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     <div class="container">
         {% block content %}{% endblock %}
     </div>

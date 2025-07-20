@@ -24,13 +24,13 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 90%; /* Ensure a small margin on the sides */
+            max-width: 800px;  /* Increased from 600px */
+            width: 90%;
             text-align: center;
             color: white;
-            margin-top: 60px; /* Add margin to avoid overlap with the top bar */
-            margin-bottom: 60px; /* Add margin to avoid overlap with the bottom bar */
-            overflow-y: auto; /* Enable vertical scrolling */
+            margin-top: 60px;
+            margin-bottom: 60px;
+            overflow-y: auto;
             position: relative;
         }
 
@@ -94,31 +94,118 @@
         }
 
         .upload-item {
+            background-color: rgba(75, 75, 75, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;  /* Match container width */
+            margin: 0 auto 20px;
+            box-sizing: border-box;
+        }
+
+        .preview-image-container {
+            width: 100%;
+            padding-top: 56.25%;  /* 16:9 Aspect Ratio */
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .preview-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: scale-down;  /* This will scale the image up while maintaining aspect ratio */
+            transform: scale(5.0);  /* This will make the image 50% bigger */
+            transform-origin: center;
+            margin: auto;
+        }
+
+        /* Add styling for video to match image */
+        .preview-image-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;  /* Changed back to contain to maintain aspect ratio */
+            margin: auto;
+        }
+
+        .info-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            width: 100%;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
         .upload-details {
-            flex-grow: 1;
+            flex: 1;
+            text-align: left;
         }
 
-        .upload-item {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start; /* Ensure content starts from the left */
-            margin-bottom: 20px;
+        .upload-details p {
+            margin: 0 0 10px 0;
+            color: white;
+            font-weight: bold;
         }
 
-        .upload-details {
-            flex-grow: 1;
-            margin-right: 10px; /* Add space between text and icon */
+        .upload-details span {
+            display: block;
+            margin-bottom: 5px;
+            color: white;
         }
 
         .animal-icon {
             width: 50px;
             height: 50px;
+            margin-left: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .round-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+
+        .round-btn:hover {
+            background-color: #555;
+        }
+
+        .btn-delete-round {
+            background-color: #dc3545;
+        }
+
+        .btn-delete-round:hover {
+            background-color: #c82333;
         }
 
         .btn-container {
@@ -126,7 +213,6 @@
             gap: 10px;
             margin-top: 10px;
         }
-
 
         .input, .btn {
             margin-bottom: 15px;
@@ -181,10 +267,10 @@
             margin-bottom: 20px;
             text-align: left;
             color: black;
-            width: calc(100% - 40px);
-            margin: 0 auto 20px; /* Ensure sections are centered and have space between them */
-            max-height: 300px; /* Fixed height for the box */
-            overflow-y: auto; /* Enable scrolling */
+            width: calc(100% - 40px);  /* Keep this to maintain padding from container edges */
+            margin: 0 auto 20px;
+            max-height: none;
+            overflow-y: visible;
         }
 
         .camera-pins ul, .upload-history ul {
@@ -222,15 +308,6 @@
             margin: 10px auto; /* Add margin to separate from buttons */
             text-align: center;
             border: 2px solid white;
-        }
-
-        .label {
-            display: block;
-            margin-bottom: 5px;
-            color: white;
-            text-align: left; /* Align label text to the left */
-            width: calc(100% - 40px);
-            margin: 0 auto;
         }
 
         .spacer {
@@ -317,38 +394,11 @@
             margin-bottom: 5px;
         }
 
-        .upload-actions {
+        .info-container {
+            flex: 1;
             display: flex;
-            align-items: center;
-            gap: 10px; /* Add space between buttons */
-            margin-left: 10px;
-        }
-
-        .round-btn {
-            background-color: #444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .round-btn:hover {
-            background-color: #555;
-        }
-
-        .btn-delete-round {
-            background-color: #d9534f;
-        }
-
-        .btn-delete-round:hover {
-            background-color: #c9302c;
+            flex-direction: column;
+            gap: 5px;
         }
     </style>
 </head>
@@ -394,17 +444,19 @@
     </form>
 
     <div class="camera-pins">
-        <h3>Saved Camera Pins</h3>
+        <h2>Camera Locations</h2>
         <ul id="camera-pins-list">
             {% for pin in user.gps_pins %}
-                <li data-camera-id="{{ pin.camera_id }}">
-                    <span>{{ pin.name }} (ID: {{ pin.camera_id }})</span>
-                    <div class="btn-group">
-                        <button onclick="viewActivity('{{ pin.camera_id }}', '{{ pin.name }}')" class="pin-btn">View Activity</button>
-                        <button onclick="openEditPinModal('{{ pin.camera_id }}', '{{ pin.name }}', '{{ pin.latitude }}', '{{ pin.longitude }}')" class="pin-btn">Edit</button>
-                        <button onclick="deletePin('{{ pin.camera_id }}')" class="pin-btn btn-delete">Delete</button>
-                    </div>
-                </li>
+            <li data-camera-id="{{ pin.camera_id }}">
+                <span>{{ pin.name }} (ID: {{ pin.camera_id }})
+                    <br>
+                    <small>Lat: {{ "%.6f"|format(pin.latitude) }}, Long: {{ "%.6f"|format(pin.longitude) }}</small>
+                </span>
+                <div class="btn-container">
+                    <button class="btn edit-pin-btn" data-camera-id="{{ pin.camera_id }}" data-name="{{ pin.name }}" data-latitude="{{ pin.latitude }}" data-longitude="{{ pin.longitude }}">Edit</button>
+                    <button class="btn btn-delete delete-pin-btn" data-camera-id="{{ pin.camera_id }}">Delete</button>
+                </div>
+            </li>
             {% endfor %}
         </ul>
     </div>
@@ -415,18 +467,29 @@
         <ul id="recent-uploads">
             {% for upload in user.uploads | reverse %}
                 <li class="upload-item" id="upload-{{ upload.filepath | replace('/', '-') }}">
-                    <div class="upload-details">
-                        <span>File: {{ upload.filepath }}</span>
-                        <span>Camera ID: {{ upload.camera_id }}</span>
-                        <span>Animal: {{ upload.animal }}</span>
-                        <span>Date: {{ upload.date }}</span>
-                        <span>Time: {{ upload.time }}</span>
+                    <div class="preview-image-container">
+                        {% if upload.filepath.endswith(('.jpg', '.jpeg', '.png')) %}
+                            <img src="{{ url_for('uploads', filename=upload.filepath) }}" alt="{{ upload.animal }}" class="preview-image">
+                        {% else %}
+                            <video width="100%" height="100%" controls>
+                                <source src="{{ url_for('uploads', filename=upload.filepath) }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% endif %}
                     </div>
-                    <img src="{{ url_for('static', filename=upload.animal | lower + '.png') }}" alt="{{ upload.animal }}">
-                    <div class="upload-actions">
+                    <div class="info-container">
+                        <div class="upload-details">
+                            <span>Camera ID: {{ upload.camera_id }}</span>
+                            <span>Animal: {{ upload.animal }}</span>
+                            <span>Date: {{ upload.date }}</span>
+                            <span>Time: {{ upload.time }}</span>
+                        </div>
+                        <img src="{{ url_for('static', filename=upload.animal | lower + '_white.png') }}" alt="{{ upload.animal }}" class="animal-icon">
+                    </div>
+                    <div class="action-buttons">
                         <button class="round-btn" onclick="viewFile('{{ upload.filepath }}')">View</button>
                         <button class="round-btn" onclick="openEditUploadModal('{{ upload.filepath }}', '{{ upload.camera_id }}', '{{ upload.animal }}', '{{ upload.date }}', '{{ upload.time }}')">Edit</button>
-                        <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ upload.filepath | replace('/', '-') }}')">Delete</button>
+                        <button class="round-btn btn-delete-round" onclick="deleteUpload('{{ upload.filepath }}', 'upload-{{ upload.filepath | replace('/', '-') }}')">×</button>
                     </div>
                 </li>
             {% endfor %}
@@ -481,6 +544,17 @@
     </div>
 </div>
 
+<!-- Modal for viewing video -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeVideoModal()">&times;</span>
+        <video id="videoPlayer" width="100%" controls>
+            <source id="videoSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+</div>
+
 
 <!-- Modal for editing upload -->
 <div id="editUploadModal" class="modal">
@@ -509,6 +583,28 @@
     const API_URL = 'http://localhost:5001/api';
     let editingPinId;
     let editingUploadFilepath;
+
+    // Add event listeners for pin buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit pin buttons
+        document.querySelectorAll('.edit-pin-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const cameraId = this.getAttribute('data-camera-id');
+                const name = this.getAttribute('data-name');
+                const latitude = parseFloat(this.getAttribute('data-latitude'));
+                const longitude = parseFloat(this.getAttribute('data-longitude'));
+                openEditPinModal(cameraId, name, latitude, longitude);
+            });
+        });
+
+        // Delete pin buttons
+        document.querySelectorAll('.delete-pin-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const cameraId = this.getAttribute('data-camera-id');
+                deletePin(cameraId);
+            });
+        });
+    });
 
 document.getElementById('editProfileForm').addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the form from submitting in the traditional way
@@ -663,9 +759,8 @@ function viewActivity(cameraId, cameraName) {
     });
 }
 
-function openEditPinModal(cameraId, cameraName, latitude, longitude) {
-    console.log(`Opening edit pin modal for cameraId: ${cameraId}, cameraName: ${cameraName}`);
-    document.getElementById('editPinName').value = cameraName;
+function openEditPinModal(cameraId, name, latitude, longitude) {
+    document.getElementById('editPinName').value = name;
     document.getElementById('editPinCameraId').value = cameraId;
     editingPinId = cameraId;
     document.getElementById('editPinModal').style.display = 'block';
@@ -718,101 +813,84 @@ function deleteUpload(filepath, cameraId) {
     .then(data => {
         if (data.status === 'success') {
             // Remove the upload item from the modal immediately
-            const uploadItems = document.querySelectorAll(`#uploadsList li`);
-            uploadItems.forEach(item => {
-                if (item.querySelector('.upload-details').textContent.includes(filepath)) {
-                    item.remove();
-                }
-            });
-
-            // Remove the upload item from the recent uploads list
-            const recentUploadItem = document.getElementById(`upload-${filepath.replace('/', '-')}`);
-            if (recentUploadItem) {
-                recentUploadItem.remove();
+            const uploadItems = document.querySelectorAll(`[id*="${filepath.replace(/\//g, '-')}"]`);
+            uploadItems.forEach(item => item.remove());
+            
+            // Also remove from the main upload history if it exists there
+            const mainUploadItem = document.getElementById(`upload-${filepath.replace(/\//g, '-')}`);
+            if (mainUploadItem) {
+                mainUploadItem.remove();
             }
-
+            
+            // No alert - just silently remove
         } else {
-            console.error(data.message);
-            alert('Error deleting upload: ' + data.message); // Notify user of error
+            alert('Error deleting upload: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error deleting upload:', error);
-        alert('Error deleting upload: ' + error); // Notify user of error
+        console.error('Error:', error);
+        alert('Error deleting upload');
     });
 }
 
-function updateUpload() {
-    const newCameraId = document.getElementById('editCameraId').value;
-    const newAnimal = document.getElementById('editAnimal').value;
-    const newDate = document.getElementById('editDate').value;
-    const newTime = document.getElementById('editTime').value;
-
-    if (!newCameraId || !newAnimal || !newDate || !newTime) {
-        alert('Please fill in all fields');
-        return;
+function deletePin(cameraId) {
+    if (confirm('Are you sure you want to delete this camera pin?')) {
+        fetch('/delete_pin', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ camera_id: cameraId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Remove the pin from the list
+                const pinElement = document.querySelector(`[data-camera-id="${cameraId}"]`);
+                if (pinElement) {
+                    pinElement.remove();
+                }
+                // No alert - just silently remove
+            } else {
+                alert('Error deleting camera pin: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting camera pin');
+        });
     }
+}
 
-    const updatedUpload = {
-        filepath: editingUploadFilepath,
-        camera_id: newCameraId,
-        animal: newAnimal,
-        date: newDate,
-        time: newTime
-    };
-
-    fetch('/update_upload', {
-        method: 'PUT',
+function updatePin() {
+    const newName = document.getElementById('editPinName').value;
+    const newCameraId = document.getElementById('editPinCameraId').value;
+    
+    fetch('/update_pin', {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updatedUpload)
+        body: JSON.stringify({
+            old_camera_id: editingPinId,
+            new_camera_id: newCameraId,
+            name: newName
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            closeEditUploadModal();
-            updateUploadList(updatedUpload);
+            closeEditPinModal();
+            // Refresh the page to show updated data
+            location.reload();
         } else {
-            console.error(data.message);
+            alert('Error updating pin: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error updating upload:', error);
+        console.error('Error:', error);
+        alert('Error updating pin');
     });
-}
-
-function updateUploadList(updatedUpload) {
-    const uploadItems = document.querySelectorAll(`#uploadsList li`);
-    uploadItems.forEach(item => {
-        if (item.querySelector('.upload-details').textContent.includes(updatedUpload.filepath)) {
-            item.querySelector('.upload-details').innerHTML = `
-                <div>File: ${updatedUpload.filepath}</div>
-                <div>Camera ID: ${updatedUpload.camera_id}</div>
-                <div>Animal: ${updatedUpload.animal}</div>
-                <div>Date: ${updatedUpload.date}</div>
-                <div>Time: ${updatedUpload.time}</div>
-            `;
-            const uploadImage = item.querySelector('img');
-            uploadImage.src = `/static/${updatedUpload.animal.toLowerCase()}.png`;
-            uploadImage.alt = updatedUpload.animal;
-        }
-    });
-
-    // Update recent uploads list
-    const recentUploadItem = document.getElementById(`upload-${updatedUpload.filepath.replace('/', '-')}`);
-    if (recentUploadItem) {
-        recentUploadItem.querySelector('.upload-details').innerHTML = `
-            <div>File: ${updatedUpload.filepath}</div>
-            <div>Camera ID: ${updatedUpload.camera_id}</div>
-            <div>Animal: ${updatedUpload.animal}</div>
-            <div>Date: ${updatedUpload.date}</div>
-            <div>Time: ${updatedUpload.time}</div>
-        `;
-        const recentUploadImage = recentUploadItem.querySelector('img');
-        recentUploadImage.src = `/static/${updatedUpload.animal.toLowerCase()}.png`;
-        recentUploadImage.alt = updatedUpload.animal;
-    }
 }
 
 function openEditUploadModal(filepath, cameraId, animal, date, time) {
@@ -828,83 +906,40 @@ function closeEditUploadModal() {
     document.getElementById('editUploadModal').style.display = 'none';
 }
 
-function updatePin() {
-    const newName = document.getElementById('editPinName').value;
-    const newCameraId = document.getElementById('editPinCameraId').value;
-
-    if (!newName || !newCameraId) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    const updatedPin = {
-        name: newName,
-        new_camera_id: newCameraId,  // Updated key to new_camera_id
-        username: '{{ user.username }}'
-    };
-
-    fetch(`/update_pin/${editingPinId}`, {
+function updateUpload() {
+    const cameraId = document.getElementById('editCameraId').value;
+    const animal = document.getElementById('editAnimal').value;
+    const date = document.getElementById('editDate').value;
+    const time = document.getElementById('editTime').value;
+    
+    fetch('/update_upload', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updatedPin)
+        body: JSON.stringify({
+            filepath: editingUploadFilepath,
+            camera_id: cameraId,
+            animal: animal,
+            date: date,
+            time: time
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            closeEditPinModal();
-            updatePinList(updatedPin);
+            closeEditUploadModal();
+            // Refresh the page to show updated data
+            location.reload();
         } else {
-            console.error(data.message);
+            alert('Error updating upload: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error updating pin:', error);
+        console.error('Error:', error);
+        alert('Error updating upload');
     });
 }
-
-function updatePinList(updatedPin) {
-    const pinItems = document.querySelectorAll('#camera-pins-list li');
-    pinItems.forEach(item => {
-        if (item.querySelector('span').textContent.includes(editingPinId)) {
-            item.querySelector('span').textContent = `${updatedPin.name} (ID: ${updatedPin.new_camera_id})`;
-        }
-    });
-}
-
-function deletePin(cameraId) {
-    console.log("Deleting pin with cameraId:", cameraId);
-    fetch(`/delete_pin/${cameraId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username: '{{ user.username }}' })
-    })
-    .then(response => {
-        console.log("Received response:", response);
-        return response.json();
-    })
-    .then(data => {
-        console.log("Received data:", data);
-        if (data.status === 'success') {
-            // Remove the pin item from the DOM immediately
-            const pinItem = document.querySelector(`li[data-camera-id="${cameraId}"]`);
-            if (pinItem) {
-                pinItem.remove();
-            }
-        } else {
-            console.error("Error deleting pin:", data.message);
-            alert('Error deleting pin: ' + data.message); // Notify user of error
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting pin:', error);
-        alert('Error deleting pin: ' + error); // Notify user of error
-    });
-}
-
 </script>
 </body>
 </html>

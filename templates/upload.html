@@ -742,6 +742,51 @@
             myChart.update();
         }
 
+        // Add event listeners for sorting
+        const sortBySelect = document.getElementById('sortBy');
+        const animalOptionsSelect = document.getElementById('animalOptions');
+        const cameraOptionsSelect = document.getElementById('cameraOptions');
+
+        // Populate camera options
+        fetch('/api/users/get_camera_ids?username={{ user.username }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    data.camera_ids.forEach(cameraId => {
+                        const option = document.createElement('option');
+                        option.value = cameraId;
+                        option.textContent = cameraId;
+                        cameraOptionsSelect.appendChild(option);
+                    });
+                }
+            });
+
+        sortBySelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            animalOptionsSelect.style.display = 'none';
+            cameraOptionsSelect.style.display = 'none';
+            
+            if (selectedValue === 'camera') {
+                cameraOptionsSelect.style.display = 'inline-block';
+            } else if (selectedValue === 'animal') {
+                animalOptionsSelect.style.display = 'inline-block';
+            }
+        });
+
+        animalOptionsSelect.addEventListener('change', function() {
+            const selectedAnimal = this.value;
+            if (selectedAnimal) {
+                fetchAndDisplayData('animal', selectedAnimal);
+            }
+        });
+
+        cameraOptionsSelect.addEventListener('change', function() {
+            const selectedCamera = this.value;
+            if (selectedCamera) {
+                fetchAndDisplayData('camera', selectedCamera);
+            }
+        });
+
         function openEditModal(upload, filePreview) {
             const editModal = document.createElement('div');
             editModal.className = 'modal';

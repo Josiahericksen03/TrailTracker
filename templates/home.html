@@ -422,15 +422,22 @@
 </div>
 
 <!-- Modal for viewing video -->
-<div id="videoModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeVideoModal()">&times;</span>
-        <video id="videoPlayer" width="100%" controls>
-            <source id="videoSource" src="" type="">
-            Your browser does not support the video tag.
-        </video>
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeVideoModal()">&times;</span>
+            <video id="videoPlayer" width="100%" controls>
+                <source id="videoSource" src="" type="">
+                Your browser does not support the video tag.
+            </video>
+        </div>
     </div>
-</div>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeImageModal()">&times;</span>
+            <img id="imageView" width="100%" alt="Uploaded Image">
+        </div>
+    </div>
 
 <!-- Modal for editing upload -->
 <div id="editUploadModal" class="modal">
@@ -572,7 +579,7 @@
                 if (data.status === 'success') {
                     data.pins.forEach(pin => {
                         const marker = L.marker([pin.latitude, pin.longitude])
-                            .bindPopup(`<div class="popup-content">Name: ${pin.name}<br>Camera ID: ${pin.camera_id}</div>`)
+                            .bindPopup(createPinPopup(pin))
                             .addTo(map);
                         marker.on('click', function() {
                             showUploads(pin.camera_id, pin.name);
@@ -689,7 +696,7 @@
             .then(data => {
                 if (data.status === 'success') {
                     L.marker([currentLat, currentLon])
-                        .bindPopup(`<div class="popup-content">Name: ${name}<br>Camera ID: ${cameraId}</div>`)
+                        .bindPopup(createPinPopup(pin))
                         .addTo(map);
                     closePinModal();
                 } else {
@@ -702,53 +709,53 @@
     }
 
     function showPins() {
-    fetch('/get_pins', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            const pinsList = document.getElementById('pinsList');
-            pinsList.innerHTML = '';
-            data.pins.forEach(pin => {
-                const li = document.createElement('li');
-                li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
-                const btnContainer = document.createElement('div');
-                btnContainer.className = 'btn-container';
+        fetch('/get_pins', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const pinsList = document.getElementById('pinsList');
+                pinsList.innerHTML = '';
+                data.pins.forEach(pin => {
+                    const li = document.createElement('li');
+                    li.textContent = `Name: ${pin.name}, Camera ID: ${pin.camera_id}`;
+                    const btnContainer = document.createElement('div');
+                    btnContainer.className = 'btn-container';
 
-                const goToBtn = document.createElement('button');
-                goToBtn.textContent = 'Go To';
-                goToBtn.className = 'btn';
-                goToBtn.onclick = () => goToPin(pin.latitude, pin.longitude);
+                    const goToBtn = document.createElement('button');
+                    goToBtn.textContent = 'Go To';
+                    goToBtn.className = 'btn';
+                    goToBtn.onclick = () => goToPin(pin.latitude, pin.longitude);
 
-                const editBtn = document.createElement('button');
-                editBtn.textContent = 'Edit';
-                editBtn.className = 'btn';
-                editBtn.onclick = () => openEditPinModal(pin.camera_id, pin.name, pin.latitude, pin.longitude);
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit';
+                    editBtn.className = 'btn';
+                    editBtn.onclick = () => openEditPinModal(pin.camera_id, pin.name, pin.latitude, pin.longitude);
 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.className = 'btn btn-delete';
-                deleteBtn.onclick = () => deletePin(pin.camera_id);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.className = 'btn btn-delete';
+                    deleteBtn.onclick = () => deletePin(pin.camera_id);
 
-                btnContainer.appendChild(goToBtn);
-                btnContainer.appendChild(editBtn);
-                btnContainer.appendChild(deleteBtn);
+                    btnContainer.appendChild(goToBtn);
+                    btnContainer.appendChild(editBtn);
+                    btnContainer.appendChild(deleteBtn);
 
-                li.appendChild(btnContainer);
-                pinsList.appendChild(li);
-            });
-            document.getElementById('pinsModal').style.display = 'block';
-        } else {
-            console.error(data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching pins:', error);
-    });
+                    li.appendChild(btnContainer);
+                    pinsList.appendChild(li);
+                });
+                document.getElementById('pinsModal').style.display = 'block';
+            } else {
+                console.error(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching pins:', error);
+        });
 
     togglePopup();
 }
@@ -809,7 +816,7 @@ function updatePinOnMap(cameraId, name, newCameraId, latitude, longitude) {
         if (layer instanceof L.Marker) {
             const popupContent = layer.getPopup().getContent();
             if (popupContent.includes(`Camera ID: ${cameraId}`)) {
-                layer.setPopupContent(`<div class="popup-content">Name: ${name}<br>Camera ID: ${newCameraId}</div>`);
+                layer.setPopupContent(createPinPopup({name, camera_id: newCameraId, latitude, longitude}));
             }
         }
     });
@@ -1048,21 +1055,18 @@ function removeUploadFromList(filepath) {
     }
 
     function viewVideo(filepath) {
-        var videoPlayer = document.getElementById('videoPlayer');
-        var videoSource = document.getElementById('videoSource');
-
-        videoSource.src = '';
-
-        if (filepath.toLowerCase().endsWith('.mp4') || filepath.toLowerCase().endsWith('.mov')) {
-            videoSource.src = `/uploads/${filepath}`;
-            videoSource.type = filepath.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime';
+        console.log("Filepath:", filepath);  // Add this line to verify filepath
+        const isImage = /\.(png|jpe?g)$/i.test(filepath);
+        if (isImage) {
+            document.getElementById('imageView').src = `/uploads/${filepath}`;
+            document.getElementById('imageModal').style.display = 'block';
         } else {
-            console.error('Unsupported video format');
-            return;
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoSource = document.getElementById('videoSource');
+            videoSource.src = `/uploads/${filepath}`;
+            videoPlayer.load();
+            document.getElementById('videoModal').style.display = 'block';
         }
-
-        videoPlayer.load();
-        document.getElementById('videoModal').style.display = 'block';
     }
 
     function closeVideoModal() {
@@ -1072,8 +1076,40 @@ function removeUploadFromList(filepath) {
         video.currentTime = 0;
     }
 
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
     function closeEditUploadModal() {
         document.getElementById('editUploadModal').style.display = 'none';
+    }
+
+    function showPinModal(pin) {
+        const pinDetails = document.getElementById('pinDetails');
+        pinDetails.innerHTML = `
+            <p>Name: ${pin.name}</p>
+            <p>Camera ID: ${pin.camera_id}</p>
+            <p>Coordinates: ${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}</p>
+        `;
+        document.getElementById('pinModal').style.display = 'block';
+    }
+
+    function createPinPopup(pin) {
+        return `
+            <div>
+                <strong>${pin.name}</strong><br>
+                Camera ID: ${pin.camera_id}<br>
+                Lat: ${pin.latitude.toFixed(6)}<br>
+                Long: ${pin.longitude.toFixed(6)}
+            </div>
+        `;
+    }
+
+    // Update the marker creation
+    function addMarker(pin) {
+        const marker = L.marker([pin.latitude, pin.longitude]).addTo(map);
+        marker.bindPopup(createPinPopup(pin));
+        markers.push(marker);
     }
 
 </script>
